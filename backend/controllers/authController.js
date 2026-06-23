@@ -8,6 +8,11 @@ dotenv.config();
 // Register a new user
 export const registerUser = async (req, res) => {
     try {
+        // Only allow admins to register new users
+        if (!req.user || req.user.role !== "admin") {
+            return res.status(403).json({ message: "Access denied. Admins only." });
+        }
+
         const { id, name, role, designation, email, phone, password } = req.body;
 
         // Check if user exists
