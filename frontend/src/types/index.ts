@@ -141,26 +141,30 @@ export interface LabRequest {
   completedAt: string;
 }
 
-export interface AutopsyForm {
+export interface BodyIdentifier {
+  id: string;
+  name: string;
+  address: string;
+}
+
+export interface PMRForm {
   id: string;
   patientId: string;
+  inquestNo: string;
+  place: string;
+  courts: string;
+  date: string;
+  caseNo: string;
   deceasedName: string;
-  deceasedAge: string;
-  deceasedSex: string;
-  autopsyDateTime: string;
-  autopsyPlace: string;
-  requestingOfficer: string;
-  mlefNo: string;
-  externalExamination: string;
-  internalExamination: string;
-  causeOfDeath: string;
-  mannerOfDeath: string;
-  toxicologyRequested: boolean;
-  histologyRequested: boolean;
-  otherTests: string;
-  conclusion: string;
-  doctorName: string;
-  doctorQualifications: string;
+  dateTimeOfDeath: string;
+  doctorConducting: string;
+  dateTimeOfExam: string;
+  placeOfExam: string;
+  district: string;
+  requestorName: string;
+  requestorDesignation: string;
+  identifiers: BodyIdentifier[];
+  jmoName: string;
   labRequestId: string;
   status: FormStatus;
   createdAt: string;

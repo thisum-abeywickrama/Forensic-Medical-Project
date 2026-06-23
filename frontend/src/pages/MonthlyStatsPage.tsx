@@ -12,7 +12,7 @@ const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#0
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 export function MonthlyStatsPage() {
-  const { patients, mlefForms, mlrReports, labRequests, autopsyForms } = useApp();
+  const { patients, mlefForms, mlrReports, labRequests, pmrForms } = useApp();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
@@ -35,7 +35,7 @@ export function MonthlyStatsPage() {
     MLEF:         mlefForms.filter(f => f.createdAt.startsWith(String(year))).length,
     MLR:          mlrReports.filter(r => r.createdAt.startsWith(String(year))).length,
     "Lab Requests": labRequests.filter(r => r.requestedAt.startsWith(String(year))).length,
-    Autopsies:    autopsyForms.filter(f => f.createdAt.startsWith(String(year))).length,
+    PMRs:         pmrForms.filter(f => f.createdAt.startsWith(String(year))).length,
   };
 
   // Hurt category pie

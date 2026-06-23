@@ -8,8 +8,8 @@ import { MLEFListPage } from "@/pages/MLEFListPage";
 import { MLEFFormPage } from "@/pages/MLEFFormPage";
 import { MLRListPage } from "@/pages/MLRListPage";
 import { MLRFormPage } from "@/pages/MLRFormPage";
-import { AutopsyListPage } from "@/pages/AutopsyListPage";
-import { AutopsyFormPage } from "@/pages/AutopsyFormPage";
+import { PMRListPage } from "@/pages/PMRListPage";
+import { PMRFormPage } from "@/pages/PMRFormPage";
 import { LabRequestsPage } from "@/pages/LabRequestsPage";
 import { DailyReportsPage } from "@/pages/DailyReportsPage";
 import { MonthlyStatsPage } from "@/pages/MonthlyStatsPage";
@@ -33,8 +33,8 @@ export const router = createBrowserRouter([
       { path: "mlef/:id",           Component: MLEFFormPage },
       { path: "mlr",                Component: MLRListPage },
       { path: "mlr/:id",            Component: MLRFormPage },
-      { path: "autopsy",            Component: AutopsyListPage },
-      { path: "autopsy/:id",        Component: AutopsyFormPage },
+      { path: "pmr",                Component: PMRListPage },
+      { path: "pmr/:id",            Component: PMRFormPage },
       { path: "lab-requests",       Component: LabRequestsPage },
       { path: "staff",              Component: StaffListPage },
       { path: "staff/register",     Component: StaffRegisterPage },

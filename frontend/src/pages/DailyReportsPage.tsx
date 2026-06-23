@@ -25,7 +25,7 @@ function EmptyRow() {
 }
 
 export function DailyReportsPage() {
-  const { patients, mlefForms, mlrReports, labRequests, autopsyForms } = useApp();
+  const { patients, mlefForms, mlrReports, labRequests, pmrForms } = useApp();
   const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
 
   const on = (d: string) => d.startsWith(reportDate);
@@ -33,7 +33,7 @@ export function DailyReportsPage() {
   const todayMlef      = mlefForms.filter(f => on(f.createdAt));
   const todayMlr       = mlrReports.filter(r => on(r.createdAt));
   const todayLab       = labRequests.filter(r => on(r.requestedAt));
-  const todayAutopsy   = autopsyForms.filter(f => on(f.createdAt));
+  const todayPmr       = pmrForms.filter(f => on(f.createdAt));
 
   const patientMap = Object.fromEntries(patients.map(p => [p.id, p]));
 
@@ -42,7 +42,7 @@ export function DailyReportsPage() {
     { label: "MLEF Forms",   count: todayMlef.length,      color: "bg-violet-50 text-violet-700 border-violet-200" },
     { label: "MLR Reports",  count: todayMlr.length,       color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { label: "Lab Requests", count: todayLab.length,       color: "bg-amber-50 text-amber-700 border-amber-200" },
-    { label: "Autopsies",    count: todayAutopsy.length,   color: "bg-rose-50 text-rose-700 border-rose-200" },
+    { label: "PMR Reports",  count: todayPmr.length,       color: "bg-rose-50 text-rose-700 border-rose-200" },
   ];
 
   return (
@@ -151,9 +151,9 @@ export function DailyReportsPage() {
         ) : <EmptyRow />}
       </ReportSection>
 
-      {todayAutopsy.length > 0 && (
-        <ReportSection title="Autopsy Forms" count={todayAutopsy.length}>
-          {todayAutopsy.map(f => (
+      {todayPmr.length > 0 && (
+        <ReportSection title="PMR Reports" count={todayPmr.length}>
+          {todayPmr.map(f => (
             <div key={f.id} className="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm">
               <span className="font-medium">{f.deceasedName || (patientMap[f.patientId]?.name ?? f.patientId)}</span>
               <Badge status={f.status} />

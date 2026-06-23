@@ -7,7 +7,7 @@ import { cls } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 
 export function DashboardPage() {
-  const { currentUser, patients, mlefForms, labRequests, mlrReports, autopsyForms } = useApp();
+  const { currentUser, patients, mlefForms, labRequests, mlrReports, pmrForms } = useApp();
   const navigate = useNavigate();
 
   if (!currentUser) return null;

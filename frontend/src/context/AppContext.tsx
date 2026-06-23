@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import type { AppUser, Patient, MLEFForm, MLRReport, LabRequest, AutopsyForm } from "@/types";
+import type { AppUser, Patient, MLEFForm, MLRReport, LabRequest, PMRForm } from "@/types";
 import { USERS, INIT_PATIENTS, INIT_MLEF, INIT_LAB } from "@/data/mockData";
 
 interface AppContextType {
@@ -17,8 +17,8 @@ interface AppContextType {
   addLabRequest: (r: LabRequest) => void;
   updateLabRequest: (id: string, data: Partial<LabRequest>) => void;
   linkLabRequest: (formType: string, formId: string, labRequestId: string) => void;
-  autopsyForms: AutopsyForm[];
-  saveAutopsyForm: (f: AutopsyForm) => void;
+  pmrForms: PMRForm[];
+  savePmrForm: (f: PMRForm) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -30,7 +30,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [mlefForms, setMlefForms] = useState<MLEFForm[]>(INIT_MLEF);
   const [mlrReports, setMlrReports] = useState<MLRReport[]>([]);
   const [labRequests, setLabRequests] = useState<LabRequest[]>(INIT_LAB);
-  const [autopsyForms, setAutopsyForms] = useState<AutopsyForm[]>([]);
+  const [pmrForms, setPmrForms] = useState<PMRForm[]>([]);
 
   const addUser = (u: AppUser) => setUsers(prev => [...prev, u]);
   const addPatient = (p: Patient) => setPatients(prev => [...prev, p]);
@@ -51,12 +51,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setMlefForms(prev => prev.map(f => f.id === formId ? { ...f, labRequestId } : f));
     else if (formType === "mlr")
       setMlrReports(prev => prev.map(r => r.id === formId ? { ...r, labRequestId } : r));
-    else if (formType === "autopsy")
-      setAutopsyForms(prev => prev.map(f => f.id === formId ? { ...f, labRequestId } : f));
+    else if (formType === "pmr")
+      setPmrForms(prev => prev.map(f => f.id === formId ? { ...f, labRequestId } : f));
   };
 
-  const saveAutopsyForm = (f: AutopsyForm) =>
-    setAutopsyForms(prev => prev.some(x => x.id === f.id) ? prev.map(x => x.id === f.id ? f : x) : [...prev, f]);
+  const savePmrForm = (f: PMRForm) =>
+    setPmrForms(prev => prev.some(x => x.id === f.id) ? prev.map(x => x.id === f.id ? f : x) : [...prev, f]);
 
   return (
     <AppContext.Provider value={{
@@ -66,7 +66,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mlefForms, saveMlefForm,
       mlrReports, saveMlrReport,
       labRequests, addLabRequest, updateLabRequest, linkLabRequest,
-      autopsyForms, saveAutopsyForm,
+      pmrForms, savePmrForm,
     }}>
       {children}
     </AppContext.Provider>
