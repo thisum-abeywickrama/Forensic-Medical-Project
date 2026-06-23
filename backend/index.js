@@ -19,6 +19,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Sanitization middleware to convert empty strings to null in req.body
+app.use((req, res, next) => {
+    if (req.body) {
+        const sanitize = (obj) => {
+            if (obj === null || obj === undefined) return obj;
+            if (typeof obj === 'string') {
+                return obj.trim() === '' ? null : obj;
+            }
+            if (Array.isArray(obj)) {
+                return obj.map(sanitize);
+            }
+            if (typeof obj === 'object') {
+                const newObj = {};
+                for (const key of Object.keys(obj)) {
+                    newObj[key] = sanitize(obj[key]);
+                }
+                return newObj;
+            }
+            return obj;
+        };
+        req.body = sanitize(req.body);
+    }
+    next();
+});
+
 // Register API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/patients", patientRoutes);
