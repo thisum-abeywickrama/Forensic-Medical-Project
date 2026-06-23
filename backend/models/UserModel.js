@@ -1,11 +1,11 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 class UserModel {
     static async createUser(userData) {
         const query = `
       INSERT INTO users (id, name, role, designation, email, phone, password_hash)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, name, role, email;
+      RETURNING id, name, role, email, phone, designation;
     `;
         const values = [
             userData.id, userData.name, userData.role,
@@ -30,4 +30,4 @@ class UserModel {
     }
 }
 
-module.exports = UserModel;
+export default UserModel;

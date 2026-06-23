@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 class PatientModel {
     static async createPatient(patientData) {
@@ -23,6 +23,12 @@ class PatientModel {
         const result = await pool.query(query);
         return result.rows;
     }
+
+    static async getPatientById(id) {
+        const query = `SELECT * FROM patients WHERE id = $1;`;
+        const result = await pool.query(query, [id]);
+        return result.rows[0];
+    }
 }
 
-module.exports = PatientModel;
+export default PatientModel;

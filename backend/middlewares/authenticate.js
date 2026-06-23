@@ -7,18 +7,17 @@ export default function authenticate(req, res, next) {
     const header = req.header("Authorization");
 
     if (header == null) {
-        next();
-    } else {
-        const token = header.replace("Bearer ", "");
-
-        jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
-            if (err || decoded == null) {
-                res.status(401).json({ message: "Invalid token please login again" });
-                return;
-            } else {
-                req.user = decoded;
-                next();
-            }
-        });
+        return res.status(401).json({ message: "Access denied. No token provided." });
     }
+
+    const token = header.replace("Bearer ", "");
+
+    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+        if (err || decoded == null) {
+            return res.status(401).json({ message: "Invalid token please login again" });
+        } else {
+            req.user = decoded;
+            next();
+        }
+    });
 }
