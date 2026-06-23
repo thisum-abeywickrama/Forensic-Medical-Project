@@ -12,7 +12,7 @@ const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#0
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 export function MonthlyStatsPage() {
-  const { patients, mlefForms, mlrReports, labRequests, autopsyForms, deceasedForms } = useApp();
+  const { patients, mlefForms, mlrReports, labRequests, autopsyForms } = useApp();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
@@ -36,7 +36,6 @@ export function MonthlyStatsPage() {
     MLR:          mlrReports.filter(r => r.createdAt.startsWith(String(year))).length,
     "Lab Requests": labRequests.filter(r => r.requestedAt.startsWith(String(year))).length,
     Autopsies:    autopsyForms.filter(f => f.createdAt.startsWith(String(year))).length,
-    Deceased:     deceasedForms.filter(f => f.createdAt.startsWith(String(year))).length,
   };
 
   // Hurt category pie
@@ -59,10 +58,7 @@ export function MonthlyStatsPage() {
     { name: "Completed",   value: labRequests.filter(r => r.status === "completed").length },
   ].filter(d => d.value > 0);
 
-  // Manner of death
-  const mannerCounts: Record<string, number> = {};
-  deceasedForms.forEach(f => { if (f.mannerOfDeath) mannerCounts[f.mannerOfDeath] = (mannerCounts[f.mannerOfDeath] ?? 0) + 1; });
-  const mannerData = Object.entries(mannerCounts).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
+
 
   const noData = <div className="h-40 flex items-center justify-center text-slate-400 text-sm">No data available.</div>;
 
@@ -79,7 +75,7 @@ export function MonthlyStatsPage() {
       />
 
       {/* Totals */}
-      <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         {Object.entries(totals).map(([label, count], i) => (
           <div key={label} className="bg-card border border-border rounded-xl px-4 py-3 text-center">
             <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-family-heading)", color: CHART_COLORS[i] }}>{count}</div>
@@ -152,21 +148,6 @@ export function MonthlyStatsPage() {
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               </PieChart>
-            </ResponsiveContainer>
-          ) : noData}
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Manner of Death (Deceased Forms)</h3>
-          {mannerData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={mannerData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} allowDecimals={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="value" fill="#ef4444" radius={[3,3,0,0]} />
-              </BarChart>
             </ResponsiveContainer>
           ) : noData}
         </div>

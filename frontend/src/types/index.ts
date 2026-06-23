@@ -167,26 +167,3 @@ export interface AutopsyForm {
   createdBy: string;
 }
 
-export interface DeceasedForm {
-  id: string;
-  name: string;
-  age: string;
-  sex: string;
-  address: string;
-  nic: string;
-  dateTimeOfDeath: string;
-  placeOfDeath: string;
-  causeOfDeath: string;
-  mannerOfDeath: string;
-  informantName: string;
-  informantRelation: string;
-  informantAddress: string;
-  identifyingMarks: string;
-  certificateIssuedBy: string;
-  policeStation: string;
-  crNo: string;
-  remarks: string;
-  status: FormStatus;
-  createdAt: string;
-  createdBy: string;
-}

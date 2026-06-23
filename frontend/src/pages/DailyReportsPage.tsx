@@ -25,7 +25,7 @@ function EmptyRow() {
 }
 
 export function DailyReportsPage() {
-  const { patients, mlefForms, mlrReports, labRequests, autopsyForms, deceasedForms } = useApp();
+  const { patients, mlefForms, mlrReports, labRequests, autopsyForms } = useApp();
   const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
 
   const on = (d: string) => d.startsWith(reportDate);
@@ -34,7 +34,6 @@ export function DailyReportsPage() {
   const todayMlr       = mlrReports.filter(r => on(r.createdAt));
   const todayLab       = labRequests.filter(r => on(r.requestedAt));
   const todayAutopsy   = autopsyForms.filter(f => on(f.createdAt));
-  const todayDeceased  = deceasedForms.filter(f => on(f.createdAt));
 
   const patientMap = Object.fromEntries(patients.map(p => [p.id, p]));
 
@@ -44,7 +43,6 @@ export function DailyReportsPage() {
     { label: "MLR Reports",  count: todayMlr.length,       color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { label: "Lab Requests", count: todayLab.length,       color: "bg-amber-50 text-amber-700 border-amber-200" },
     { label: "Autopsies",    count: todayAutopsy.length,   color: "bg-rose-50 text-rose-700 border-rose-200" },
-    { label: "Deceased",     count: todayDeceased.length,  color: "bg-slate-50 text-slate-700 border-slate-200" },
   ];
 
   return (
@@ -61,7 +59,7 @@ export function DailyReportsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
         {summaryCards.map(s => (
           <div key={s.label} className={cls("rounded-xl border px-4 py-3", s.color)}>
             <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-family-heading)" }}>{s.count}</div>
@@ -153,27 +151,15 @@ export function DailyReportsPage() {
         ) : <EmptyRow />}
       </ReportSection>
 
-      {(todayAutopsy.length > 0 || todayDeceased.length > 0) && (
-        <div className="grid grid-cols-2 gap-4">
-          <ReportSection title="Autopsy Forms" count={todayAutopsy.length}>
-            {todayAutopsy.map(f => (
-              <div key={f.id} className="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm">
-                <span className="font-medium">{f.deceasedName || (patientMap[f.patientId]?.name ?? f.patientId)}</span>
-                <Badge status={f.status} />
-              </div>
-            ))}
-            {todayAutopsy.length === 0 && <EmptyRow />}
-          </ReportSection>
-          <ReportSection title="Deceased Forms" count={todayDeceased.length}>
-            {todayDeceased.map(f => (
-              <div key={f.id} className="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm">
-                <span className="font-medium">{f.name}</span>
-                <span className="text-xs text-slate-500 capitalize">{f.mannerOfDeath}</span>
-              </div>
-            ))}
-            {todayDeceased.length === 0 && <EmptyRow />}
-          </ReportSection>
-        </div>
+      {todayAutopsy.length > 0 && (
+        <ReportSection title="Autopsy Forms" count={todayAutopsy.length}>
+          {todayAutopsy.map(f => (
+            <div key={f.id} className="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-sm">
+              <span className="font-medium">{f.deceasedName || (patientMap[f.patientId]?.name ?? f.patientId)}</span>
+              <Badge status={f.status} />
+            </div>
+          ))}
+        </ReportSection>
       )}
     </div>
   );

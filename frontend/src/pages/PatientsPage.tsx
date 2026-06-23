@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 
 export function PatientsPage() {
-  const { currentUser, patients, mlefForms, mlrReports, autopsyForms, deceasedForms, labRequests } = useApp();
+  const { currentUser, patients, mlefForms, mlrReports, autopsyForms, labRequests } = useApp();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
@@ -40,7 +40,6 @@ export function PatientsPage() {
           const pMlef     = mlefForms.filter(f => f.patientId === p.id);
           const pMlr      = mlrReports.filter(r => r.patientId === p.id);
           const pAutopsy  = autopsyForms.filter(f => f.patientId === p.id);
-          const pDeceased = deceasedForms.filter(f => f.id === p.id); // deceased uses own id
           const pLab      = labRequests.filter(r => r.patientId === p.id);
 
           return (
@@ -136,16 +135,7 @@ export function PatientsPage() {
                   </div>
                 )}
 
-                {/* Deceased — doctor creates; admin views */}
-                {isDoctor && (
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs font-semibold text-slate-400 w-16 flex-shrink-0">Deceased</span>
-                    <Btn variant="ghost" size="sm" icon={<Plus size={12} />}
-                      onClick={() => navigate(`/deceased/new`)}>
-                      New Deceased
-                    </Btn>
-                  </div>
-                )}
+
               </div>
             </div>
           );
