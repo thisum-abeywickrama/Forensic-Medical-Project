@@ -1,74 +1,72 @@
 pipeline {
     agent any
 
+    // 1. Define tools managed by Jenkins, not the host system
+    tools {
+        nodejs 'NodeJS-20' // Ensure this matches the name in Manage Jenkins > Tools
+    }
+
     environment {
-        // Forces Docker to use a clean, consistent name instead of the random Jenkins workspace name
         COMPOSE_PROJECT_NAME = 'Forensic-Medical-Project'
+        // Define paths to avoid cluttering the root system
+        DOCKER_BUILDKIT = '1' 
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Jenkins automatically pulls the latest code from your main branch
                 checkout scm
             }
         }
 
-        stage('Backend Build & Test') {
-            steps {
-                dir('backend') {
-                    // Installs dependencies using the Node.js we installed on your EC2
-                    sh 'npm install'
-                    
-                    // TODO: Uncomment the line below once you write your Jest/Mocha tests
-                    // sh 'npm test'
-                    echo 'Backend is ready!'
+        stage('Build & Test') {
+            parallel {
+                stage('Backend') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm ci' // 'npm ci' is preferred over 'install' for CI environments
+                            // sh 'npm test' 
+                        }
+                    }
+                }
+                stage('Frontend') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm ci'
+                            // sh 'npm test'
+                        }
+                    }
                 }
             }
         }
 
-        stage('Frontend Build & Test') {
+        stage('Deploy') {
             steps {
-                dir('frontend') {
-                    sh 'npm install'
-                    
-                    // TODO: Uncomment the line below once you write your Vite/React tests
-                    // sh 'npm test'
-                    echo 'Frontend is ready!'
+                script {
+                    // Use try-catch to ensure we don't leave the app in a broken state
+                    try {
+                        sh '''
+                            docker-compose down
+                            docker-compose build --parallel --no-cache
+                            docker-compose up -d --remove-orphans
+                        '''
+                    } catch (Exception e) {
+                        error("Deployment failed: ${e.getMessage()}")
+                    }
                 }
-            }
-        }
-
-        stage('Deploy to Production') {
-            steps {
-                // We run this directly in the Jenkins workspace so it uses the exact code that just passed the tests above.
-                sh '''
-                    docker-compose down
-                    docker-compose build --no-cache
-                    docker-compose up -d --remove-orphans
-                '''
-            }
-        }
-
-        stage('Cleanup') {
-            steps {
-                // This is CRITICAL. It automatically deletes old Docker images after every successful deploy
-                // so your new 30GB hard drive never fills up to 100% again!
-                sh 'docker image prune -af'
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Deployment Successful! The new version is live.'
+        always {
+            // Prune only dangling images to save space without deleting base layers
+            sh 'docker image prune -f'
+            // Cleanup workspace to keep the 19GB drive healthy
+            cleanWs()
         }
         failure {
-            echo '❌ Pipeline failed. Check the Jenkins logs. The previous working version is likely still running.'
-        }
-        always {
-            // Deletes the source code from the Jenkins folder after it finishes to save disk space
-            cleanWs()
+            echo "Pipeline failed. Check logs at ${env.BUILD_URL}"
         }
     }
 }
