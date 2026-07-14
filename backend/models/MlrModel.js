@@ -11,11 +11,10 @@ class MlrModel {
           id, patient_id, special_investigations, non_grievous_nos, death_causing_count,
           blunt_weapon_nos, blunt_contusion_nos, cut_nos, sharp_cutting_nos, stab_nos,
           firearms_nos, burns_nos, bite_nos, further_notes, patient_smell_liquor,
-          under_influence_liquor, doctor_name, doctor_qualifications, designation,
-          station, date_of_despatch, lab_request_id, status, created_by
+          under_influence_liquor, date_of_despatch, lab_request_id, status, created_by
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
         )
         RETURNING *;
       `;
@@ -23,8 +22,7 @@ class MlrModel {
                 m.id, m.patientId, m.specialInvestigations, m.nonGrievousNos, m.deathCausingCount,
                 m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos, m.stabNos,
                 m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes, m.patientSmellLiquor,
-                m.underInfluenceLiquor, m.doctorName, m.doctorQualifications, m.designation,
-                m.station, m.dateOfDespatch, m.labRequestId, m.status, m.createdBy
+                m.underInfluenceLiquor, m.dateOfDespatch, m.labRequestId, m.status, m.createdBy
             ];
 
             await client.query(query, values);
@@ -71,17 +69,15 @@ class MlrModel {
           special_investigations = $1, non_grievous_nos = $2, death_causing_count = $3,
           blunt_weapon_nos = $4, blunt_contusion_nos = $5, cut_nos = $6, sharp_cutting_nos = $7,
           stab_nos = $8, firearms_nos = $9, burns_nos = $10, bite_nos = $11, further_notes = $12,
-          patient_smell_liquor = $13, under_influence_liquor = $14, doctor_name = $15,
-          doctor_qualifications = $16, designation = $17, station = $18, date_of_despatch = $19,
-          lab_request_id = $20, status = $21
-        WHERE id = $22;
+          patient_smell_liquor = $13, under_influence_liquor = $14, date_of_despatch = $15,
+          lab_request_id = $16, status = $17
+        WHERE id = $18;
       `;
             const values = [
                 m.specialInvestigations, m.nonGrievousNos, m.deathCausingCount,
                 m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos,
                 m.stabNos, m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes,
-                m.patientSmellLiquor, m.underInfluenceLiquor, m.doctorName,
-                m.doctorQualifications, m.designation, m.station, m.dateOfDespatch,
+                m.patientSmellLiquor, m.underInfluenceLiquor, m.dateOfDespatch,
                 m.labRequestId, m.status, id
             ];
 
@@ -127,6 +123,10 @@ class MlrModel {
         const query = `
       SELECT 
         m.*,
+        u.name AS doctor_name,
+        u.qualifications AS doctor_qualifications,
+        u.designation AS designation,
+        u.station AS station,
         COALESCE(
           (SELECT json_agg(json_build_object('id', i.id, 'no', i.injury_no, 'description', i.description))
            FROM mlr_injuries i WHERE i.mlr_id = m.id), '[]'
@@ -136,6 +136,7 @@ class MlrModel {
            FROM mlr_grievous_entries g WHERE g.mlr_id = m.id), '[]'
         ) as grievous_entries
       FROM mlr_reports m
+      LEFT JOIN users u ON m.created_by = u.id
       WHERE m.id = $1;
     `;
         const result = await pool.query(query, [id]);
@@ -146,6 +147,10 @@ class MlrModel {
         const query = `
       SELECT 
         m.*,
+        u.name AS doctor_name,
+        u.qualifications AS doctor_qualifications,
+        u.designation AS designation,
+        u.station AS station,
         COALESCE(
           (SELECT json_agg(json_build_object('id', i.id, 'no', i.injury_no, 'description', i.description))
            FROM mlr_injuries i WHERE i.mlr_id = m.id), '[]'
@@ -155,6 +160,7 @@ class MlrModel {
            FROM mlr_grievous_entries g WHERE g.mlr_id = m.id), '[]'
         ) as grievous_entries
       FROM mlr_reports m
+      LEFT JOIN users u ON m.created_by = u.id
       ORDER BY m.created_at DESC;
     `;
         const result = await pool.query(query);
