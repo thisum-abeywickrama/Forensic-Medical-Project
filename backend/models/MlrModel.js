@@ -8,18 +8,18 @@ class MlrModel {
 
             const query = `
         INSERT INTO mlr_reports (
-          id, patient_id, special_investigations, non_grievous_nos, death_causing_count,
+          id, patient_id, special_investigations, death_causing_count,
           blunt_weapon_nos, blunt_contusion_nos, cut_nos, sharp_cutting_nos, stab_nos,
           firearms_nos, burns_nos, bite_nos, further_notes, patient_smell_liquor,
           under_influence_liquor, date_of_despatch, lab_request_id, status, created_by
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
         )
         RETURNING *;
       `;
             const values = [
-                m.id, m.patientId, m.specialInvestigations, m.nonGrievousNos, m.deathCausingCount,
+                m.id, m.patientId, m.specialInvestigations, m.deathCausingCount,
                 m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos, m.stabNos,
                 m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes, m.patientSmellLiquor,
                 m.underInfluenceLiquor, m.dateOfDespatch, m.labRequestId, m.status, m.createdBy
@@ -35,6 +35,13 @@ class MlrModel {
         `;
                 for (const injury of injuries) {
                     await client.query(insertInjuryQuery, [m.id, injury.no, injury.description]);
+                }
+            }
+
+            // Insert non-grievous nos
+            if (m.nonGrievousNos && m.nonGrievousNos.length > 0) {
+                for (const v of m.nonGrievousNos) {
+                    await client.query('INSERT INTO mlr_non_grievous_nos (mlr_id, value) VALUES ($1, $2)', [m.id, v]);
                 }
             }
 
@@ -66,15 +73,15 @@ class MlrModel {
 
             const query = `
         UPDATE mlr_reports SET
-          special_investigations = $1, non_grievous_nos = $2, death_causing_count = $3,
-          blunt_weapon_nos = $4, blunt_contusion_nos = $5, cut_nos = $6, sharp_cutting_nos = $7,
-          stab_nos = $8, firearms_nos = $9, burns_nos = $10, bite_nos = $11, further_notes = $12,
-          patient_smell_liquor = $13, under_influence_liquor = $14, date_of_despatch = $15,
-          lab_request_id = $16, status = $17
-        WHERE id = $18;
+          special_investigations = $1, death_causing_count = $2,
+          blunt_weapon_nos = $3, blunt_contusion_nos = $4, cut_nos = $5, sharp_cutting_nos = $6,
+          stab_nos = $7, firearms_nos = $8, burns_nos = $9, bite_nos = $10, further_notes = $11,
+          patient_smell_liquor = $12, under_influence_liquor = $13, date_of_despatch = $14,
+          lab_request_id = $15, status = $16
+        WHERE id = $17;
       `;
             const values = [
-                m.specialInvestigations, m.nonGrievousNos, m.deathCausingCount,
+                m.specialInvestigations, m.deathCausingCount,
                 m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos,
                 m.stabNos, m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes,
                 m.patientSmellLiquor, m.underInfluenceLiquor, m.dateOfDespatch,
@@ -84,8 +91,16 @@ class MlrModel {
             await client.query(query, values);
 
             // Delete old details
+            await client.query(`DELETE FROM mlr_non_grievous_nos WHERE mlr_id = $1;`, [id]);
             await client.query(`DELETE FROM mlr_injuries WHERE mlr_id = $1;`, [id]);
             await client.query(`DELETE FROM mlr_grievous_entries WHERE mlr_id = $1;`, [id]);
+
+            // Re-insert non-grievous nos
+            if (m.nonGrievousNos && m.nonGrievousNos.length > 0) {
+                for (const v of m.nonGrievousNos) {
+                    await client.query('INSERT INTO mlr_non_grievous_nos (mlr_id, value) VALUES ($1, $2)', [id, v]);
+                }
+            }
 
             // Re-insert injuries
             if (injuries && injuries.length > 0) {
@@ -128,6 +143,9 @@ class MlrModel {
         u.designation AS designation,
         u.station AS station,
         COALESCE(
+          (SELECT json_agg(ngn.value) FROM mlr_non_grievous_nos ngn WHERE ngn.mlr_id = m.id), '[]'
+        ) AS non_grievous_nos,
+        COALESCE(
           (SELECT json_agg(json_build_object('id', i.id, 'no', i.injury_no, 'description', i.description))
            FROM mlr_injuries i WHERE i.mlr_id = m.id), '[]'
         ) as injuries,
@@ -151,6 +169,9 @@ class MlrModel {
         u.qualifications AS doctor_qualifications,
         u.designation AS designation,
         u.station AS station,
+        COALESCE(
+          (SELECT json_agg(ngn.value) FROM mlr_non_grievous_nos ngn WHERE ngn.mlr_id = m.id), '[]'
+        ) AS non_grievous_nos,
         COALESCE(
           (SELECT json_agg(json_build_object('id', i.id, 'no', i.injury_no, 'description', i.description))
            FROM mlr_injuries i WHERE i.mlr_id = m.id), '[]'
