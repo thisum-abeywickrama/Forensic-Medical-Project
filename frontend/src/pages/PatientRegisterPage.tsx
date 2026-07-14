@@ -62,7 +62,7 @@ export function PatientRegisterPage() {
         id: genId("P"),
         name: form.name, dob: form.dob, age, sex: form.sex,
         address: form.address, nic: form.nic, email: form.email, phone: form.phone,
-        registeredAt: new Date().toISOString(), registeredBy: currentUser.name,
+        registeredAt: new Date().toISOString(), registeredBy: currentUser.id,
         profilePictureUrl: profilePictureUrl || undefined,
       };
       await addPatient(p);
