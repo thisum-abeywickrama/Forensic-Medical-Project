@@ -34,7 +34,7 @@ CREATE TABLE patients (
     nic VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(50) NOT NULL,
-    registered_by VARCHAR(255) NOT NULL, -- name of user
+    registered_by_id VARCHAR(50) REFERENCES users(id),
     profile_picture_url VARCHAR(500),
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -50,7 +50,7 @@ CREATE TABLE mlef_forms (
     date_of_issue DATE,
     reason_for_referring TEXT,
     officer_reg_no VARCHAR(255) REFERENCES police_officers(reg_no),
-    part_a_filled_by VARCHAR(255),
+    part_a_filled_by_id VARCHAR(50) REFERENCES users(id),
     part_a_filled_at TIMESTAMP,
     
     -- Part B (Medical Officer)
@@ -114,14 +114,6 @@ CREATE TABLE mlr_reports (
     special_investigations TEXT,
     -- non_grievous_nos moved to mlr_non_grievous_nos child table
     death_causing_count VARCHAR(255),
-    blunt_weapon_nos VARCHAR(255),
-    blunt_contusion_nos VARCHAR(255),
-    cut_nos VARCHAR(255),
-    sharp_cutting_nos VARCHAR(255),
-    stab_nos VARCHAR(255),
-    firearms_nos VARCHAR(255),
-    burns_nos VARCHAR(255),
-    bite_nos VARCHAR(255),
     further_notes TEXT,
     patient_smell_liquor VARCHAR(50),
     under_influence_liquor VARCHAR(50),
@@ -134,6 +126,54 @@ CREATE TABLE mlr_reports (
 
 -- 4.a. MLR Non-Grievous Nos (Child table for MLR Report)
 CREATE TABLE mlr_non_grievous_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_blunt_weapon_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_blunt_contusion_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_cut_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_sharp_cutting_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_stab_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_firearms_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_burns_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE mlr_bite_nos (
     id SERIAL PRIMARY KEY,
     mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
     value VARCHAR(255) NOT NULL
@@ -166,13 +206,13 @@ CREATE TABLE pmr_forms (
     date DATE,
     case_no VARCHAR(255),
     date_time_of_death TIMESTAMP,
-    doctor_conducting VARCHAR(255),
+    doctor_conducting_id VARCHAR(50) REFERENCES users(id),
     date_time_of_exam TIMESTAMP,
     place_of_exam VARCHAR(255),
     district VARCHAR(255),
     requestor_name VARCHAR(255),
     requestor_designation VARCHAR(255),
-    jmo_name VARCHAR(255),
+    jmo_id VARCHAR(50) REFERENCES users(id),
     lab_request_id VARCHAR(50),
     status VARCHAR(50) DEFAULT 'draft', -- 'draft', 'submitted'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -202,7 +242,7 @@ CREATE TABLE lab_requests (
     test_results TEXT,
     observations TEXT,
     conclusion TEXT,
-    lab_tech_name VARCHAR(255),
+    lab_tech_id VARCHAR(50) REFERENCES users(id),
     completed_at TIMESTAMP
 );
 
