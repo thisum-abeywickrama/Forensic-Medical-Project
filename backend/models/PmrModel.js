@@ -9,8 +9,8 @@ class PmrModel {
             const query = `
         INSERT INTO pmr_forms (
           id, patient_id, inquest_no, place, courts, date, case_no, 
-          date_time_of_death, doctor_conducting, date_time_of_exam, place_of_exam, 
-          district, requestor_name, requestor_designation, jmo_name, lab_request_id, status, created_by
+          date_time_of_death, doctor_conducting_id, date_time_of_exam, place_of_exam, 
+          district, requestor_name, requestor_designation, jmo_id, lab_request_id, status, created_by
         )
         VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
@@ -54,9 +54,9 @@ class PmrModel {
             const query = `
         UPDATE pmr_forms SET
           inquest_no = $1, place = $2, courts = $3, date = $4, case_no = $5, 
-          date_time_of_death = $6, doctor_conducting = $7, 
+          date_time_of_death = $6, doctor_conducting_id = $7, 
           date_time_of_exam = $8, place_of_exam = $9, district = $10, 
-          requestor_name = $11, requestor_designation = $12, jmo_name = $13, 
+          requestor_name = $11, requestor_designation = $12, jmo_id = $13, 
           lab_request_id = $14, status = $15
         WHERE id = $16;
       `;
@@ -99,12 +99,16 @@ class PmrModel {
       SELECT 
         p.*,
         pt.name AS deceased_name,
+        u1.name AS doctor_conducting,
+        u2.name AS jmo_name,
         COALESCE(
           (SELECT json_agg(json_build_object('id', i.id, 'name', i.name, 'address', i.address))
            FROM pmr_identifiers i WHERE i.pmr_id = p.id), '[]'
         ) as identifiers
       FROM pmr_forms p
       LEFT JOIN patients pt ON p.patient_id = pt.id
+      LEFT JOIN users u1 ON p.doctor_conducting_id = u1.id
+      LEFT JOIN users u2 ON p.jmo_id = u2.id
       WHERE p.id = $1;
     `;
         const result = await pool.query(query, [id]);
@@ -116,12 +120,16 @@ class PmrModel {
       SELECT 
         p.*,
         pt.name AS deceased_name,
+        u1.name AS doctor_conducting,
+        u2.name AS jmo_name,
         COALESCE(
           (SELECT json_agg(json_build_object('id', i.id, 'name', i.name, 'address', i.address))
            FROM pmr_identifiers i WHERE i.pmr_id = p.id), '[]'
         ) as identifiers
       FROM pmr_forms p
       LEFT JOIN patients pt ON p.patient_id = pt.id
+      LEFT JOIN users u1 ON p.doctor_conducting_id = u1.id
+      LEFT JOIN users u2 ON p.jmo_id = u2.id
       ORDER BY p.created_at DESC;
     `;
         const result = await pool.query(query);

@@ -1,5 +1,14 @@
 import pool from '../config/db.js';
 
+// Helper to insert comma-separated strings into child tables
+const insertCsvToChildTable = async (client, tableName, mlrId, csvString) => {
+    if (!csvString || csvString.trim() === '') return;
+    const values = csvString.split(',').map(v => v.trim()).filter(v => v !== '');
+    for (const val of values) {
+        await client.query(`INSERT INTO ${tableName} (mlr_id, value) VALUES ($1, $2)`, [mlrId, val]);
+    }
+};
+
 class MlrModel {
     static async createMlrReport(m, injuries, grievousEntries) {
         const client = await pool.connect();
@@ -9,23 +18,31 @@ class MlrModel {
             const query = `
         INSERT INTO mlr_reports (
           id, patient_id, special_investigations, death_causing_count,
-          blunt_weapon_nos, blunt_contusion_nos, cut_nos, sharp_cutting_nos, stab_nos,
-          firearms_nos, burns_nos, bite_nos, further_notes, patient_smell_liquor,
-          under_influence_liquor, date_of_despatch, lab_request_id, status, created_by
+          further_notes, patient_smell_liquor, under_influence_liquor,
+          date_of_despatch, lab_request_id, status, created_by
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
         )
         RETURNING *;
       `;
             const values = [
                 m.id, m.patientId, m.specialInvestigations, m.deathCausingCount,
-                m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos, m.stabNos,
-                m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes, m.patientSmellLiquor,
-                m.underInfluenceLiquor, m.dateOfDespatch, m.labRequestId, m.status, m.createdBy
+                m.furtherNotes, m.patientSmellLiquor, m.underInfluenceLiquor,
+                m.dateOfDespatch, m.labRequestId, m.status, m.createdBy
             ];
 
             await client.query(query, values);
+
+            // Insert 1NF comma-separated child rows
+            await insertCsvToChildTable(client, 'mlr_blunt_weapon_nos', m.id, m.bluntWeaponNos);
+            await insertCsvToChildTable(client, 'mlr_blunt_contusion_nos', m.id, m.bluntContusionNos);
+            await insertCsvToChildTable(client, 'mlr_cut_nos', m.id, m.cutNos);
+            await insertCsvToChildTable(client, 'mlr_sharp_cutting_nos', m.id, m.sharpCuttingNos);
+            await insertCsvToChildTable(client, 'mlr_stab_nos', m.id, m.stabNos);
+            await insertCsvToChildTable(client, 'mlr_firearms_nos', m.id, m.firearmsNos);
+            await insertCsvToChildTable(client, 'mlr_burns_nos', m.id, m.burnsNos);
+            await insertCsvToChildTable(client, 'mlr_bite_nos', m.id, m.biteNos);
 
             // Insert injuries
             if (injuries && injuries.length > 0) {
@@ -74,18 +91,14 @@ class MlrModel {
             const query = `
         UPDATE mlr_reports SET
           special_investigations = $1, death_causing_count = $2,
-          blunt_weapon_nos = $3, blunt_contusion_nos = $4, cut_nos = $5, sharp_cutting_nos = $6,
-          stab_nos = $7, firearms_nos = $8, burns_nos = $9, bite_nos = $10, further_notes = $11,
-          patient_smell_liquor = $12, under_influence_liquor = $13, date_of_despatch = $14,
-          lab_request_id = $15, status = $16
-        WHERE id = $17;
+          further_notes = $3, patient_smell_liquor = $4, under_influence_liquor = $5,
+          date_of_despatch = $6, lab_request_id = $7, status = $8
+        WHERE id = $9;
       `;
             const values = [
                 m.specialInvestigations, m.deathCausingCount,
-                m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos,
-                m.stabNos, m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes,
-                m.patientSmellLiquor, m.underInfluenceLiquor, m.dateOfDespatch,
-                m.labRequestId, m.status, id
+                m.furtherNotes, m.patientSmellLiquor, m.underInfluenceLiquor,
+                m.dateOfDespatch, m.labRequestId, m.status, id
             ];
 
             await client.query(query, values);
@@ -94,6 +107,24 @@ class MlrModel {
             await client.query(`DELETE FROM mlr_non_grievous_nos WHERE mlr_id = $1;`, [id]);
             await client.query(`DELETE FROM mlr_injuries WHERE mlr_id = $1;`, [id]);
             await client.query(`DELETE FROM mlr_grievous_entries WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_blunt_weapon_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_blunt_contusion_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_cut_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_sharp_cutting_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_stab_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_firearms_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_burns_nos WHERE mlr_id = $1;`, [id]);
+            await client.query(`DELETE FROM mlr_bite_nos WHERE mlr_id = $1;`, [id]);
+
+            // Re-insert 1NF comma-separated child rows
+            await insertCsvToChildTable(client, 'mlr_blunt_weapon_nos', id, m.bluntWeaponNos);
+            await insertCsvToChildTable(client, 'mlr_blunt_contusion_nos', id, m.bluntContusionNos);
+            await insertCsvToChildTable(client, 'mlr_cut_nos', id, m.cutNos);
+            await insertCsvToChildTable(client, 'mlr_sharp_cutting_nos', id, m.sharpCuttingNos);
+            await insertCsvToChildTable(client, 'mlr_stab_nos', id, m.stabNos);
+            await insertCsvToChildTable(client, 'mlr_firearms_nos', id, m.firearmsNos);
+            await insertCsvToChildTable(client, 'mlr_burns_nos', id, m.burnsNos);
+            await insertCsvToChildTable(client, 'mlr_bite_nos', id, m.biteNos);
 
             // Re-insert non-grievous nos
             if (m.nonGrievousNos && m.nonGrievousNos.length > 0) {
@@ -142,6 +173,14 @@ class MlrModel {
         u.qualifications AS doctor_qualifications,
         u.designation AS designation,
         u.station AS station,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_blunt_weapon_nos v WHERE v.mlr_id = m.id), '') AS blunt_weapon_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_blunt_contusion_nos v WHERE v.mlr_id = m.id), '') AS blunt_contusion_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_cut_nos v WHERE v.mlr_id = m.id), '') AS cut_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_sharp_cutting_nos v WHERE v.mlr_id = m.id), '') AS sharp_cutting_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_stab_nos v WHERE v.mlr_id = m.id), '') AS stab_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_firearms_nos v WHERE v.mlr_id = m.id), '') AS firearms_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_burns_nos v WHERE v.mlr_id = m.id), '') AS burns_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_bite_nos v WHERE v.mlr_id = m.id), '') AS bite_nos,
         COALESCE(
           (SELECT json_agg(ngn.value) FROM mlr_non_grievous_nos ngn WHERE ngn.mlr_id = m.id), '[]'
         ) AS non_grievous_nos,
@@ -169,6 +208,14 @@ class MlrModel {
         u.qualifications AS doctor_qualifications,
         u.designation AS designation,
         u.station AS station,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_blunt_weapon_nos v WHERE v.mlr_id = m.id), '') AS blunt_weapon_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_blunt_contusion_nos v WHERE v.mlr_id = m.id), '') AS blunt_contusion_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_cut_nos v WHERE v.mlr_id = m.id), '') AS cut_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_sharp_cutting_nos v WHERE v.mlr_id = m.id), '') AS sharp_cutting_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_stab_nos v WHERE v.mlr_id = m.id), '') AS stab_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_firearms_nos v WHERE v.mlr_id = m.id), '') AS firearms_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_burns_nos v WHERE v.mlr_id = m.id), '') AS burns_nos,
+        COALESCE((SELECT string_agg(v.value, ', ') FROM mlr_bite_nos v WHERE v.mlr_id = m.id), '') AS bite_nos,
         COALESCE(
           (SELECT json_agg(ngn.value) FROM mlr_non_grievous_nos ngn WHERE ngn.mlr_id = m.id), '[]'
         ) AS non_grievous_nos,

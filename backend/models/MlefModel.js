@@ -9,7 +9,7 @@ class MlefModel {
             const query = `
       INSERT INTO mlef_forms (
         id, patient_id, police_station, mlef_no, date_of_issue, reason_for_referring, officer_reg_no,
-        part_a_filled_by, part_a_filled_at, hospital, ward, bht_no,
+        part_a_filled_by_id, part_a_filled_at, hospital, ward, bht_no,
         admission_date, exam_date_time, discharge_date, exam_place, internal_injuries,
         causative_weapon_other, hurt_category, endangers_life, alcohol_exam,
         drugs_exam, brief_history, exam_findings, investigations, referrals,
@@ -67,7 +67,7 @@ class MlefModel {
             const query = `
       UPDATE mlef_forms SET
         police_station = $1, mlef_no = $2, date_of_issue = $3, reason_for_referring = $4,
-        officer_reg_no = $5, part_a_filled_by = $6, part_a_filled_at = $7,
+        officer_reg_no = $5, part_a_filled_by_id = $6, part_a_filled_at = $7,
         hospital = $8, ward = $9, bht_no = $10, admission_date = $11, exam_date_time = $12,
         discharge_date = $13, exam_place = $14, internal_injuries = $15,
         causative_weapon_other = $16, hurt_category = $17, endangers_life = $18,
@@ -127,6 +127,7 @@ class MlefModel {
         const query = `
           SELECT 
             m.*,
+            ua.name AS part_a_filled_by,
             p.name AS examinee_name,
             p.address AS examinee_address,
             p.sex AS examinee_sex,
@@ -151,6 +152,7 @@ class MlefModel {
           LEFT JOIN patients p ON m.patient_id = p.id
           LEFT JOIN police_officers po ON m.officer_reg_no = po.reg_no
           LEFT JOIN users u ON m.part_b_filled_by = u.id
+          LEFT JOIN users ua ON m.part_a_filled_by_id = ua.id
           WHERE m.id = $1;
         `;
         const result = await pool.query(query, [id]);
@@ -161,6 +163,7 @@ class MlefModel {
         const query = `
           SELECT 
             m.*,
+            ua.name AS part_a_filled_by,
             p.name AS examinee_name,
             p.address AS examinee_address,
             p.sex AS examinee_sex,
@@ -185,6 +188,7 @@ class MlefModel {
           LEFT JOIN patients p ON m.patient_id = p.id
           LEFT JOIN police_officers po ON m.officer_reg_no = po.reg_no
           LEFT JOIN users u ON m.part_b_filled_by = u.id
+          LEFT JOIN users ua ON m.part_a_filled_by_id = ua.id
           ORDER BY m.created_at DESC;
         `;
         const result = await pool.query(query);

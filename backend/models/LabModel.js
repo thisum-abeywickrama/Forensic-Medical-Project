@@ -54,7 +54,10 @@ class LabModel {
             const keys = Object.keys(updateData);
             if (keys.length > 0) {
                 const setClause = keys.map((key, index) => {
-                    const dbColumn = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+                    let dbColumn = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+                    if (dbColumn === 'lab_tech_name') {
+                        dbColumn = 'lab_tech_id'; // 3NF Fix
+                    }
                     return `${dbColumn} = $${index + 2}`;
                 }).join(', ');
 
@@ -96,11 +99,13 @@ class LabModel {
           SELECT 
             l.*, 
             u.name AS requested_by_name,
+            u2.name AS lab_tech_name,
             COALESCE(
               (SELECT json_agg(tt.value) FROM lab_request_test_types tt WHERE tt.lab_request_id = l.id), '[]'
             ) AS test_types
           FROM lab_requests l 
           LEFT JOIN users u ON l.requested_by = u.id 
+          LEFT JOIN users u2 ON l.lab_tech_id = u2.id
           WHERE l.id = $1;
         `;
         const result = await pool.query(query, [id]);
@@ -112,11 +117,13 @@ class LabModel {
           SELECT 
             l.*, 
             u.name AS requested_by_name,
+            u2.name AS lab_tech_name,
             COALESCE(
               (SELECT json_agg(tt.value) FROM lab_request_test_types tt WHERE tt.lab_request_id = l.id), '[]'
             ) AS test_types
           FROM lab_requests l 
           LEFT JOIN users u ON l.requested_by = u.id 
+          LEFT JOIN users u2 ON l.lab_tech_id = u2.id
           ORDER BY l.requested_at DESC;
         `;
         const result = await pool.query(query);
