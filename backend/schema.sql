@@ -6,11 +6,22 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL, -- 'doctor', 'jmo', 'admin', 'lab'
     designation VARCHAR(255) NOT NULL,
+    qualifications VARCHAR(255),
+    slmc_reg_no VARCHAR(255),
+    station VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     profile_picture_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 1.a. Police Officers Table
+CREATE TABLE police_officers (
+    reg_no VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    rank VARCHAR(255),
+    police_station VARCHAR(255)
 );
 
 -- 2. Patients Table
@@ -37,15 +48,8 @@ CREATE TABLE mlef_forms (
     police_station VARCHAR(255),
     mlef_no VARCHAR(255),
     date_of_issue DATE,
-    examinee_name VARCHAR(255),
-    examinee_address TEXT,
-    examinee_age VARCHAR(50),
-    examinee_sex VARCHAR(50),
     reason_for_referring TEXT,
-    officer_name VARCHAR(255),
-    officer_rank VARCHAR(255),
-    officer_reg_no VARCHAR(255),
-    officer_police_station VARCHAR(255),
+    officer_reg_no VARCHAR(255) REFERENCES police_officers(reg_no),
     part_a_filled_by VARCHAR(255),
     part_a_filled_at TIMESTAMP,
     
@@ -72,10 +76,6 @@ CREATE TABLE mlef_forms (
     referrals TEXT,
     other_opinions TEXT,
     remarks TEXT,
-    doctor_name VARCHAR(255),
-    doctor_qualifications VARCHAR(255),
-    slmc_reg_no VARCHAR(255),
-    doctor_designation VARCHAR(255),
     ref_no VARCHAR(255),
     part_b_filled_by VARCHAR(50) REFERENCES users(id),
     part_b_filled_at TIMESTAMP,
@@ -104,10 +104,6 @@ CREATE TABLE mlr_reports (
     further_notes TEXT,
     patient_smell_liquor VARCHAR(50),
     under_influence_liquor VARCHAR(50),
-    doctor_name VARCHAR(255),
-    doctor_qualifications VARCHAR(255),
-    designation VARCHAR(255),
-    station VARCHAR(255),
     date_of_despatch DATE,
     lab_request_id VARCHAR(50),
     status VARCHAR(50) DEFAULT 'draft', -- 'draft', 'submitted'
@@ -141,7 +137,6 @@ CREATE TABLE pmr_forms (
     courts VARCHAR(255),
     date DATE,
     case_no VARCHAR(255),
-    deceased_name VARCHAR(255),
     date_time_of_death TIMESTAMP,
     doctor_conducting VARCHAR(255),
     date_time_of_exam TIMESTAMP,
@@ -169,7 +164,6 @@ CREATE TABLE lab_requests (
     id VARCHAR(50) PRIMARY KEY,
     patient_id VARCHAR(50) REFERENCES patients(id) ON DELETE CASCADE,
     requested_by VARCHAR(50) REFERENCES users(id),
-    requested_by_name VARCHAR(255),
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     form_type VARCHAR(50) NOT NULL, -- 'mlef', 'mlr', 'pmr'
     form_id VARCHAR(50) NOT NULL,
