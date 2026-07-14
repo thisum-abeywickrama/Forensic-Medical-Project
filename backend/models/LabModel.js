@@ -4,14 +4,14 @@ class LabModel {
     static async createLabRequest(req) {
         const query = `
       INSERT INTO lab_requests (
-        id, patient_id, requested_by, requested_by_name, form_type, form_id, 
+        id, patient_id, requested_by, form_type, form_id, 
         test_types, urgency, clinical_history, status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `;
         const values = [
-            req.id, req.patientId, req.requestedBy, req.requestedByName, req.formType, req.formId,
+            req.id, req.patientId, req.requestedBy, req.formType, req.formId,
             req.testTypes, req.urgency, req.clinicalHistory, req.status
         ];
 
@@ -43,13 +43,23 @@ class LabModel {
     }
 
     static async getLabRequestById(id) {
-        const query = `SELECT * FROM lab_requests WHERE id = $1;`;
+        const query = `
+          SELECT l.*, u.name AS requested_by_name 
+          FROM lab_requests l 
+          LEFT JOIN users u ON l.requested_by = u.id 
+          WHERE l.id = $1;
+        `;
         const result = await pool.query(query, [id]);
         return result.rows[0];
     }
 
     static async getAllLabRequests() {
-        const query = `SELECT * FROM lab_requests ORDER BY requested_at DESC;`;
+        const query = `
+          SELECT l.*, u.name AS requested_by_name 
+          FROM lab_requests l 
+          LEFT JOIN users u ON l.requested_by = u.id 
+          ORDER BY l.requested_at DESC;
+        `;
         const result = await pool.query(query);
         return result.rows;
     }
