@@ -16,9 +16,9 @@ const POLICE_OFFICERS = [
 ];
 
 const PATIENTS = [
-  { id: "P2026-001", name: "Ruwan Kumara",    dob: "1985-03-15", sex: "Male",   address: "123 Galle Road, Colombo 03",   nic: "851530423V", email: "ruwan.k@gmail.com", phone: "0711234567", registeredAt: "2026-06-20T08:30:00Z", registeredBy: "Nimal Silva" },
-  { id: "P2026-002", name: "Shamila Perera",  dob: "1992-07-22", sex: "Female", address: "45 Kandy Road, Kurunegala",     nic: "927040756V", email: "shamila.p@gmail.com", phone: "0712345678", registeredAt: "2026-06-21T09:15:00Z", registeredBy: "Kamani Dissanayake" },
-  { id: "P2026-003", name: "Ajith Bandara",   dob: "1978-11-08", sex: "Male",   address: "78 Negombo Road, Wattala",      nic: "782130589V", email: "ajith.b@gmail.com", phone: "0713456789", registeredAt: "2026-06-21T10:00:00Z", registeredBy: "Nimal Silva" },
+  { id: "P2026-001", name: "Ruwan Kumara",    dob: "1985-03-15", sex: "Male",   address: "123 Galle Road, Colombo 03",   nic: "851530423V", email: "ruwan.k@gmail.com", phone: "0711234567", registeredAt: "2026-06-20T08:30:00Z", registeredBy: "a1" },
+  { id: "P2026-002", name: "Shamila Perera",  dob: "1992-07-22", sex: "Female", address: "45 Kandy Road, Kurunegala",     nic: "927040756V", email: "shamila.p@gmail.com", phone: "0712345678", registeredAt: "2026-06-21T09:15:00Z", registeredBy: "a2" },
+  { id: "P2026-003", name: "Ajith Bandara",   dob: "1978-11-08", sex: "Male",   address: "78 Negombo Road, Wattala",      nic: "782130589V", email: "ajith.b@gmail.com", phone: "0713456789", registeredAt: "2026-06-21T10:00:00Z", registeredBy: "a1" },
 ];
 
 const MLEFS = [{
@@ -26,7 +26,7 @@ const MLEFS = [{
   policeStation: "Colombo Fort", mlefNo: "CF/2026/1234", dateOfIssue: "2026-06-20",
   reasonForReferring: "Assault causing bodily harm — section 314 of Penal Code",
   officerRegNo: "PS/7890",
-  partAFilledBy: "Nimal Silva", partAFilledAt: "2026-06-20T08:30:00Z",
+  partAFilledBy: "a1", partAFilledAt: "2026-06-20T08:30:00Z",
   hospital: "National Hospital Colombo", ward: "Surgical Ward 5", bhtNo: "23181",
   admissionDate: "2026-06-20", examDateTime: "2026-06-20T09:40:00Z",
   dischargeDate: null, examPlace: "NHC",
@@ -49,7 +49,7 @@ const LAB_REQUESTS = [{
   requestedAt: "2026-06-21T10:30:00Z", formType: "mlef", formId: "MLEF-2026-001",
   testTypes: ["blood_alcohol", "drug_screen"], urgency: "urgent",
   clinicalHistory: "Patient brought by police. Alleged assault. Suspected alcohol consumption.",
-  status: "pending", testResults: null, observations: null, conclusion: null, labTechName: null, completedAt: null,
+  status: "pending", testResults: null, observations: null, conclusion: null, labTechId: null, completedAt: null,
 }];
 
 async function seed() {
@@ -84,7 +84,7 @@ async function seed() {
     console.log("Seeding patients...");
     for (const p of PATIENTS) {
       const patientQuery = `
-        INSERT INTO patients (id, name, dob, sex, address, nic, email, phone, registered_by, registered_at)
+        INSERT INTO patients (id, name, dob, sex, address, nic, email, phone, registered_by_id, registered_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `;
       await client.query(patientQuery, [p.id, p.name, p.dob, p.sex, p.address, p.nic, p.email, p.phone, p.registeredBy, p.registeredAt]);
@@ -95,7 +95,7 @@ async function seed() {
       const mlefQuery = `
         INSERT INTO mlef_forms (
           id, patient_id, police_station, mlef_no, date_of_issue, reason_for_referring, officer_reg_no,
-          part_a_filled_by, part_a_filled_at, hospital, ward, bht_no,
+          part_a_filled_by_id, part_a_filled_at, hospital, ward, bht_no,
           admission_date, exam_date_time, discharge_date, exam_place, internal_injuries,
           causative_weapon_other, hurt_category, endangers_life, alcohol_exam,
           drugs_exam, brief_history, exam_findings, investigations, referrals,
@@ -138,14 +138,14 @@ async function seed() {
         INSERT INTO lab_requests (
           id, patient_id, requested_by, requested_at, form_type, form_id, 
           urgency, clinical_history, status, test_results, observations, conclusion,
-          lab_tech_name, completed_at
+          lab_tech_id, completed_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       `;
       await client.query(labQuery, [
         r.id, r.patientId, r.requestedBy, r.requestedAt, r.formType, r.formId,
         r.urgency, r.clinicalHistory, r.status, r.testResults, r.observations, r.conclusion,
-        r.labTechName, r.completedAt
+        r.labTechId, r.completedAt
       ]);
 
       if (r.testTypes && r.testTypes.length > 0) {
