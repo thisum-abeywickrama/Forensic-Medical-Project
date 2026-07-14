@@ -61,15 +61,15 @@ CREATE TABLE mlef_forms (
     exam_date_time TIMESTAMP,
     discharge_date DATE,
     exam_place VARCHAR(255),
-    body_harm_types TEXT[], -- Array of strings e.g. ['laceration', 'contusion']
+    -- body_harm_types moved to mlef_body_harm_types child table
     internal_injuries TEXT,
-    causative_weapon TEXT[], -- Array of strings
+    -- causative_weapon moved to mlef_causative_weapons child table
     causative_weapon_other TEXT,
     hurt_category VARCHAR(50),
     endangers_life VARCHAR(50),
     alcohol_exam VARCHAR(50),
     drugs_exam VARCHAR(50),
-    sexual_assault_signs TEXT[], -- Array of strings
+    -- sexual_assault_signs moved to mlef_sexual_assault_signs child table
     brief_history TEXT,
     exam_findings TEXT,
     investigations TEXT,
@@ -86,12 +86,33 @@ CREATE TABLE mlef_forms (
     created_by VARCHAR(50) REFERENCES users(id)
 );
 
+-- 3.a. MLEF Body Harm Types (Child table for MLEF Form)
+CREATE TABLE mlef_body_harm_types (
+    id SERIAL PRIMARY KEY,
+    mlef_id VARCHAR(50) REFERENCES mlef_forms(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+-- 3.b. MLEF Causative Weapons (Child table for MLEF Form)
+CREATE TABLE mlef_causative_weapons (
+    id SERIAL PRIMARY KEY,
+    mlef_id VARCHAR(50) REFERENCES mlef_forms(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
+-- 3.c. MLEF Sexual Assault Signs (Child table for MLEF Form)
+CREATE TABLE mlef_sexual_assault_signs (
+    id SERIAL PRIMARY KEY,
+    mlef_id VARCHAR(50) REFERENCES mlef_forms(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
+);
+
 -- 4. MLR Reports (Medico-Legal Reports)
 CREATE TABLE mlr_reports (
     id VARCHAR(50) PRIMARY KEY,
     patient_id VARCHAR(50) REFERENCES patients(id) ON DELETE CASCADE,
     special_investigations TEXT,
-    non_grievous_nos TEXT[], -- Array of injury numbers
+    -- non_grievous_nos moved to mlr_non_grievous_nos child table
     death_causing_count VARCHAR(255),
     blunt_weapon_nos VARCHAR(255),
     blunt_contusion_nos VARCHAR(255),
@@ -109,6 +130,13 @@ CREATE TABLE mlr_reports (
     status VARCHAR(50) DEFAULT 'draft', -- 'draft', 'submitted'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(50) REFERENCES users(id)
+);
+
+-- 4.a. MLR Non-Grievous Nos (Child table for MLR Report)
+CREATE TABLE mlr_non_grievous_nos (
+    id SERIAL PRIMARY KEY,
+    mlr_id VARCHAR(50) REFERENCES mlr_reports(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
 );
 
 -- 5. MLR Injuries Table (Child table for MLR Report)
@@ -167,7 +195,7 @@ CREATE TABLE lab_requests (
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     form_type VARCHAR(50) NOT NULL, -- 'mlef', 'mlr', 'pmr'
     form_id VARCHAR(50) NOT NULL,
-    test_types TEXT[], -- Array of test types e.g. ['toxicology', 'blood_alcohol']
+    -- test_types moved to lab_request_test_types child table
     urgency VARCHAR(50) NOT NULL, -- 'routine', 'urgent', 'stat'
     clinical_history TEXT,
     status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'in_progress', 'completed'
@@ -176,4 +204,11 @@ CREATE TABLE lab_requests (
     conclusion TEXT,
     lab_tech_name VARCHAR(255),
     completed_at TIMESTAMP
+);
+
+-- 9.a. Lab Request Test Types (Child table for Lab Requests)
+CREATE TABLE lab_request_test_types (
+    id SERIAL PRIMARY KEY,
+    lab_request_id VARCHAR(50) REFERENCES lab_requests(id) ON DELETE CASCADE,
+    value VARCHAR(255) NOT NULL
 );
