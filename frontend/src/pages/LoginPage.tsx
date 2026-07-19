@@ -70,7 +70,16 @@ export function LoginPage() {
           </div>
 
           <div className="mb-5">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Password</label>
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-xs font-semibold text-primary hover:text-blue-700"
+              >
+                Forgot password?
+              </button>
+            </div>
             <div className="relative">
               <Shield size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input type={showPassword ? "text" : "password"} value={password}

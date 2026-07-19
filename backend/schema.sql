@@ -16,6 +16,12 @@ CREATE TABLE users (
     verification_expires_at TIMESTAMP,
     verification_sent_at TIMESTAMP,           -- used to throttle resend requests
     verification_attempts INTEGER NOT NULL DEFAULT 0,
+    -- Password reset: same emailed-code mechanism as verification, kept in
+    -- separate columns so a reset in progress cannot clash with a verification
+    reset_code_hash VARCHAR(255),
+    reset_expires_at TIMESTAMP,
+    reset_sent_at TIMESTAMP,
+    reset_attempts INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

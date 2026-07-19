@@ -105,6 +105,18 @@ export const api = {
         body: JSON.stringify({ email }),
       });
     },
+    forgotPassword: async (email: string) => {
+      return request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
+    resetPassword: async (payload: { email: string; code: string; newPassword: string }) => {
+      return request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
     register: async (userData: any) => {
       return request('/auth/register', {
         method: 'POST',

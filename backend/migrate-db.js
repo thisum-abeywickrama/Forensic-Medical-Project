@@ -32,6 +32,13 @@ async function migrate() {
         await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_sent_at TIMESTAMP;");
         await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_attempts INTEGER NOT NULL DEFAULT 0;");
 
+        // Add password reset columns
+        console.log("Adding password reset columns to users...");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code_hash VARCHAR(255);");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP;");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_sent_at TIMESTAMP;");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_attempts INTEGER NOT NULL DEFAULT 0;");
+
         // Ensure bucket exists in storage.buckets
         console.log("Ensuring images storage bucket exists...");
         await pool.query(`

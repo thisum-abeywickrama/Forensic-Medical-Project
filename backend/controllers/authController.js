@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import UserModel from "../models/UserModel.js";
-import { sendVerificationEmail } from "../utils/mailer.js";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../utils/mailer.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,6 +10,7 @@ dotenv.config();
 const CODE_TTL_MINUTES = 15;
 const RESEND_COOLDOWN_SECONDS = 60;
 const MAX_VERIFY_ATTEMPTS = 5;
+const MIN_PASSWORD_LENGTH = 8;
 
 // Issue the JWT + safe user payload returned on a successful sign-in
 const issueSession = (user) => ({
@@ -185,6 +186,99 @@ export const resendVerification = async (req, res) => {
     } catch (error) {
         console.error("Resend verification error:", error);
         res.status(500).json({ message: "Server error while resending verification code" });
+    }
+};
+
+// Step 1 of reset — email a code to a user who has forgotten their password
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await UserModel.getUserByEmail(email);
+
+        // Identical response whether or not the address is registered, so this
+        // endpoint cannot be used to discover which staff emails exist.
+        const sent = () => res.status(200).json({
+            message: "If an account exists for that address, a reset code has been sent."
+        });
+
+        if (!user) {
+            return sent();
+        }
+
+        if (user.reset_sent_at) {
+            const secondsSinceLast = (Date.now() - new Date(user.reset_sent_at).getTime()) / 1000;
+            if (secondsSinceLast < RESEND_COOLDOWN_SECONDS) {
+                return res.status(429).json({
+                    message: `Please wait ${Math.ceil(RESEND_COOLDOWN_SECONDS - secondsSinceLast)}s before requesting another code.`
+                });
+            }
+        }
+
+        const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
+        const codeHash = await bcrypt.hash(code, 10);
+        const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
+
+        await UserModel.setResetCode(user.email, codeHash, expiresAt);
+        await sendPasswordResetEmail(user.email, user.name, code, CODE_TTL_MINUTES);
+
+        return sent();
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.status(500).json({ message: "Server error while requesting a password reset" });
+    }
+};
+
+// Step 2 of reset — verify the code and set the new password
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+
+        if (!email || !code || !newPassword) {
+            return res.status(400).json({ message: "Email, code and new password are required" });
+        }
+
+        if (String(newPassword).length < MIN_PASSWORD_LENGTH) {
+            return res.status(400).json({
+                message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`
+            });
+        }
+
+        const user = await UserModel.getUserByEmail(email);
+
+        const invalid = () => res.status(400).json({ message: "Invalid or expired reset code" });
+
+        if (!user || !user.reset_code_hash || !user.reset_expires_at) {
+            return invalid();
+        }
+
+        if (new Date(user.reset_expires_at).getTime() < Date.now()) {
+            return res.status(400).json({ message: "This reset code has expired. Please request a new one." });
+        }
+
+        if (user.reset_attempts >= MAX_VERIFY_ATTEMPTS) {
+            return res.status(429).json({ message: "Too many incorrect attempts. Please request a new code." });
+        }
+
+        const isMatch = await bcrypt.compare(String(code), user.reset_code_hash);
+        if (!isMatch) {
+            await UserModel.incrementResetAttempts(email);
+            return invalid();
+        }
+
+        const passwordHash = await bcrypt.hash(String(newPassword), 10);
+        await UserModel.updatePassword(email, passwordHash);
+
+        // No token is issued here on purpose: the user signs in again with the
+        // new password, which confirms it was set to what they intended.
+        res.status(200).json({ message: "Password reset successfully. You can now sign in." });
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({ message: "Server error while resetting password" });
     }
 };
 

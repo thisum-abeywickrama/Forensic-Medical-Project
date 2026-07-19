@@ -16,6 +16,9 @@ describe("Auth Controller & Routes", () => {
     let setVerificationCodeSpy;
     let markEmailVerifiedSpy;
     let incrementVerificationAttemptsSpy;
+    let setResetCodeSpy;
+    let updatePasswordSpy;
+    let incrementResetAttemptsSpy;
 
     beforeAll(async () => {
         // Create a real hash for the test password
@@ -30,6 +33,9 @@ describe("Auth Controller & Routes", () => {
         setVerificationCodeSpy = jest.spyOn(UserModel, "setVerificationCode").mockResolvedValue(undefined);
         markEmailVerifiedSpy = jest.spyOn(UserModel, "markEmailVerified");
         incrementVerificationAttemptsSpy = jest.spyOn(UserModel, "incrementVerificationAttempts").mockResolvedValue(1);
+        setResetCodeSpy = jest.spyOn(UserModel, "setResetCode").mockResolvedValue(undefined);
+        updatePasswordSpy = jest.spyOn(UserModel, "updatePassword").mockResolvedValue({ id: "USR-2000" });
+        incrementResetAttemptsSpy = jest.spyOn(UserModel, "incrementResetAttempts").mockResolvedValue(1);
         // Keep the dev-mode verification code out of the test output
         jest.spyOn(console, "log").mockImplementation(() => {});
     });
@@ -251,6 +257,164 @@ describe("Auth Controller & Routes", () => {
 
             expect(response.status).toBe(429);
             expect(setVerificationCodeSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("Forgot / reset password", () => {
+        const futureDate = () => new Date(Date.now() + 10 * 60 * 1000);
+
+        const resetUser = (overrides = {}) => ({
+            id: "USR-2000",
+            name: "Dr. Silva",
+            role: "doctor",
+            email: "dr.silva@forensic.gov",
+            password_hash: hashedPassword,
+            email_verified: true,
+            reset_attempts: 0,
+            ...overrides
+        });
+
+        test("18. Should email a reset code to a registered address", async () => {
+            getUserByEmailSpy.mockResolvedValue(resetUser());
+
+            const response = await request(app)
+                .post("/api/auth/forgot-password")
+                .send({ email: "dr.silva@forensic.gov" });
+
+            expect(response.status).toBe(200);
+            expect(setResetCodeSpy).toHaveBeenCalled();
+            // The code itself must never appear in the response body
+            expect(JSON.stringify(response.body)).not.toMatch(/\d{6}/);
+        });
+
+        test("19. Should not reveal whether an account exists", async () => {
+            getUserByEmailSpy.mockResolvedValue(undefined);
+
+            const unknown = await request(app)
+                .post("/api/auth/forgot-password")
+                .send({ email: "nobody@forensic.gov" });
+
+            getUserByEmailSpy.mockResolvedValue(resetUser());
+            const known = await request(app)
+                .post("/api/auth/forgot-password")
+                .send({ email: "dr.silva@forensic.gov" });
+
+            expect(unknown.status).toBe(200);
+            expect(known.status).toBe(200);
+            expect(unknown.body.message).toBe(known.body.message);
+        });
+
+        test("20. Should throttle rapid reset requests", async () => {
+            getUserByEmailSpy.mockResolvedValue(resetUser({ reset_sent_at: new Date() }));
+
+            const response = await request(app)
+                .post("/api/auth/forgot-password")
+                .send({ email: "dr.silva@forensic.gov" });
+
+            expect(response.status).toBe(429);
+            expect(setResetCodeSpy).not.toHaveBeenCalled();
+        });
+
+        test("21. Should reset the password with a valid code", async () => {
+            const codeHash = await bcrypt.hash("654321", 10);
+            getUserByEmailSpy.mockResolvedValue(resetUser({
+                reset_code_hash: codeHash,
+                reset_expires_at: futureDate()
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/reset-password")
+                .send({ email: "dr.silva@forensic.gov", code: "654321", newPassword: "NewPassw0rd!" });
+
+            expect(response.status).toBe(200);
+            expect(updatePasswordSpy).toHaveBeenCalled();
+
+            // The stored value must be a bcrypt hash, never the raw password
+            const [, storedHash] = updatePasswordSpy.mock.calls[0];
+            expect(storedHash).not.toBe("NewPassw0rd!");
+            expect(await bcrypt.compare("NewPassw0rd!", storedHash)).toBe(true);
+
+            // No session is handed out by the reset itself
+            expect(response.body).not.toHaveProperty("token");
+        });
+
+        test("22. Should reject an incorrect reset code and count the attempt", async () => {
+            const codeHash = await bcrypt.hash("654321", 10);
+            getUserByEmailSpy.mockResolvedValue(resetUser({
+                reset_code_hash: codeHash,
+                reset_expires_at: futureDate()
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/reset-password")
+                .send({ email: "dr.silva@forensic.gov", code: "000000", newPassword: "NewPassw0rd!" });
+
+            expect(response.status).toBe(400);
+            expect(updatePasswordSpy).not.toHaveBeenCalled();
+            expect(incrementResetAttemptsSpy).toHaveBeenCalledWith("dr.silva@forensic.gov");
+        });
+
+        test("23. Should reject an expired reset code", async () => {
+            const codeHash = await bcrypt.hash("654321", 10);
+            getUserByEmailSpy.mockResolvedValue(resetUser({
+                reset_code_hash: codeHash,
+                reset_expires_at: new Date(Date.now() - 60 * 1000)
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/reset-password")
+                .send({ email: "dr.silva@forensic.gov", code: "654321", newPassword: "NewPassw0rd!" });
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toMatch(/expired/i);
+            expect(updatePasswordSpy).not.toHaveBeenCalled();
+        });
+
+        test("24. Should lock out after too many incorrect reset attempts", async () => {
+            const codeHash = await bcrypt.hash("654321", 10);
+            getUserByEmailSpy.mockResolvedValue(resetUser({
+                reset_code_hash: codeHash,
+                reset_expires_at: futureDate(),
+                reset_attempts: 5
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/reset-password")
+                .send({ email: "dr.silva@forensic.gov", code: "654321", newPassword: "NewPassw0rd!" });
+
+            expect(response.status).toBe(429);
+            expect(updatePasswordSpy).not.toHaveBeenCalled();
+        });
+
+        test("25. Should reject a password below the minimum length", async () => {
+            const codeHash = await bcrypt.hash("654321", 10);
+            getUserByEmailSpy.mockResolvedValue(resetUser({
+                reset_code_hash: codeHash,
+                reset_expires_at: futureDate()
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/reset-password")
+                .send({ email: "dr.silva@forensic.gov", code: "654321", newPassword: "123" });
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toMatch(/at least 8 characters/i);
+            expect(updatePasswordSpy).not.toHaveBeenCalled();
+        });
+
+        test("26. Should reject a reset when no code was ever requested", async () => {
+            // Guards against resetting a password with a guessed code alone
+            getUserByEmailSpy.mockResolvedValue(resetUser({
+                reset_code_hash: null,
+                reset_expires_at: null
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/reset-password")
+                .send({ email: "dr.silva@forensic.gov", code: "654321", newPassword: "NewPassw0rd!" });
+
+            expect(response.status).toBe(400);
+            expect(updatePasswordSpy).not.toHaveBeenCalled();
         });
     });
 

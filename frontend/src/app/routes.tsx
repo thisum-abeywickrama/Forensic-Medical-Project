@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { LoginPage } from "@/pages/LoginPage";
 import { VerifyEmailPage } from "@/pages/VerifyEmailPage";
+import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { PatientsPage } from "@/pages/PatientsPage";
 import { PatientRegisterPage } from "@/pages/PatientRegisterPage";
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
   {
     path: "/verify-email",
     Component: VerifyEmailPage,
+  },
+  {
+    path: "/forgot-password",
+    Component: ForgotPasswordPage,
   },
   {
     path: "/",
