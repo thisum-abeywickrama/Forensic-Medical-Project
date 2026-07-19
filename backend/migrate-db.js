@@ -7,7 +7,38 @@ async function migrate() {
         // Add profile_picture_url column
         await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture_url VARCHAR(500);");
         await pool.query("ALTER TABLE patients ADD COLUMN IF NOT EXISTS profile_picture_url VARCHAR(500);");
-        
+
+        // Add email verification columns
+        console.log("Adding email verification columns to users...");
+
+        // Detect a first run before creating the column: accounts that predate this
+        // feature are grandfathered in, but only once. Checking first means re-running
+        // the migration later cannot flip genuinely unverified accounts to verified.
+        const { rows: existing } = await pool.query(`
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'email_verified';
+        `);
+        const isFirstRun = existing.length === 0;
+
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;");
+
+        if (isFirstRun) {
+            const { rowCount } = await pool.query("UPDATE users SET email_verified = TRUE;");
+            console.log(`Grandfathered ${rowCount} existing user(s) as already verified.`);
+        }
+
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code_hash VARCHAR(255);");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMP;");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_sent_at TIMESTAMP;");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_attempts INTEGER NOT NULL DEFAULT 0;");
+
+        // Add password reset columns
+        console.log("Adding password reset columns to users...");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_code_hash VARCHAR(255);");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP;");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_sent_at TIMESTAMP;");
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_attempts INTEGER NOT NULL DEFAULT 0;");
+
         // Ensure bucket exists in storage.buckets
         console.log("Ensuring images storage bucket exists...");
         await pool.query(`

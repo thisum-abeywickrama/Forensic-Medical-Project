@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Activity, AlertCircle, User, Shield } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { toast } from "sonner";
 
 export function LoginPage() {
@@ -26,6 +26,14 @@ export function LoginPage() {
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
+      // Credentials were correct but the address is not confirmed yet — the
+      // backend has already emailed a fresh code, so send them to the code step.
+      if (err instanceof ApiError && err.data?.verificationRequired) {
+        sessionStorage.setItem("pendingVerificationEmail", err.data.email || email.trim());
+        toast.info("Please verify your email address to continue.");
+        navigate("/verify-email");
+        return;
+      }
       setError(err.message || "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
@@ -62,7 +70,16 @@ export function LoginPage() {
           </div>
 
           <div className="mb-5">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Password</label>
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-xs font-semibold text-primary hover:text-blue-700"
+              >
+                Forgot password?
+              </button>
+            </div>
             <div className="relative">
               <Shield size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input type={showPassword ? "text" : "password"} value={password}

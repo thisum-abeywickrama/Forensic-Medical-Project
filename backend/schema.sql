@@ -10,6 +10,18 @@ CREATE TABLE users (
     phone VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     profile_picture_url VARCHAR(500),
+    -- Email verification: a user must confirm their address once before first login
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code_hash VARCHAR(255),      -- bcrypt hash of the 6-digit code, never the code itself
+    verification_expires_at TIMESTAMP,
+    verification_sent_at TIMESTAMP,           -- used to throttle resend requests
+    verification_attempts INTEGER NOT NULL DEFAULT 0,
+    -- Password reset: same emailed-code mechanism as verification, kept in
+    -- separate columns so a reset in progress cannot clash with a verification
+    reset_code_hash VARCHAR(255),
+    reset_expires_at TIMESTAMP,
+    reset_sent_at TIMESTAMP,
+    reset_attempts INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

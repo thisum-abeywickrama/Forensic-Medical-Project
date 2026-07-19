@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Microscope } from "lucide-react";
+import { Microscope, Download } from "lucide-react";
+import { toast } from "sonner";
+import { downloadLabPdf } from "@/lib/pdf";
 import { useApp } from "@/context/AppContext";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -46,6 +48,16 @@ export function LabRequestsPage() {
   const handleSaveRequest = (req: LabRequest) => {
     addLabRequest(req);
     setShowRequestModal(false);
+  };
+
+  const handleDownload = async (req: LabRequest) => {
+    try {
+      await downloadLabPdf(req, patientMap[req.patientId] ?? null, currentUser.name);
+      toast.success(`Downloaded ${req.id}.`);
+    } catch (err) {
+      console.error("Failed to generate lab PDF:", err);
+      toast.error(`Could not generate PDF for ${req.id}.`);
+    }
   };
 
   return (
@@ -100,7 +112,12 @@ export function LabRequestsPage() {
                         <div><span className="text-slate-600">Results:</span> {req.testResults}</div>
                         <div><span className="text-slate-600">Observations:</span> {req.observations}</div>
                         <div><span className="text-slate-600">Conclusion:</span> {req.conclusion}</div>
-                        <div className="text-xs text-slate-400 mt-1">Completed: {new Date(req.completedAt).toLocaleString("en-GB")}</div>
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="text-xs text-slate-400">Completed: {new Date(req.completedAt).toLocaleString("en-GB")}</div>
+                          <Btn variant="secondary" size="sm" icon={<Download size={12} />} onClick={() => handleDownload(req)}>
+                            Download PDF
+                          </Btn>
+                        </div>
                       </div>
                     )}
 
