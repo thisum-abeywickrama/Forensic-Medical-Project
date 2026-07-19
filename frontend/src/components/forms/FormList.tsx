@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye } from "lucide-react";
+import { Eye, Download } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Btn } from "@/components/ui/Btn";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -22,9 +22,13 @@ interface FormListProps<T extends ListItem> {
   onNew?: () => void;
   newLabel?: string;
   renderExtra?: (item: T) => React.ReactNode;
+  /** Generate a PDF for this record. Omit to hide the download action entirely. */
+  onDownload?: (item: T) => void;
+  /** Whether this particular record is finished enough to export. */
+  canDownload?: (item: T) => boolean;
 }
 
-export function FormList<T extends ListItem>({ title, icon, items, patients, onOpen, onNew, newLabel, renderExtra }: FormListProps<T>) {
+export function FormList<T extends ListItem>({ title, icon, items, patients, onOpen, onNew, newLabel, renderExtra, onDownload, canDownload }: FormListProps<T>) {
   const [search, setSearch] = useState("");
   const patientMap = Object.fromEntries(patients.map(p => [p.id, p]));
 
@@ -72,6 +76,9 @@ export function FormList<T extends ListItem>({ title, icon, items, patients, onO
                     <div className="flex items-center gap-3">
                       <Badge status={item.status} />
                       <div className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleDateString("en-GB")}</div>
+                      {onDownload && canDownload?.(item) && (
+                        <Btn variant="secondary" size="sm" icon={<Download size={12} />} onClick={() => onDownload(item)}>PDF</Btn>
+                      )}
                       <Btn variant="secondary" size="sm" icon={<Eye size={12} />} onClick={() => onOpen(item.id)}>Open</Btn>
                     </div>
                   </div>
