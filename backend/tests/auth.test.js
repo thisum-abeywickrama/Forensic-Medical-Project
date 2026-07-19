@@ -13,6 +13,9 @@ describe("Auth Controller & Routes", () => {
     let getUserByEmailSpy;
     let createUserSpy;
     let getAllUsersSpy;
+    let setVerificationCodeSpy;
+    let markEmailVerifiedSpy;
+    let incrementVerificationAttemptsSpy;
 
     beforeAll(async () => {
         // Create a real hash for the test password
@@ -24,6 +27,11 @@ describe("Auth Controller & Routes", () => {
         getUserByEmailSpy = jest.spyOn(UserModel, "getUserByEmail");
         createUserSpy = jest.spyOn(UserModel, "createUser");
         getAllUsersSpy = jest.spyOn(UserModel, "getAllUsers");
+        setVerificationCodeSpy = jest.spyOn(UserModel, "setVerificationCode").mockResolvedValue(undefined);
+        markEmailVerifiedSpy = jest.spyOn(UserModel, "markEmailVerified");
+        incrementVerificationAttemptsSpy = jest.spyOn(UserModel, "incrementVerificationAttempts").mockResolvedValue(1);
+        // Keep the dev-mode verification code out of the test output
+        jest.spyOn(console, "log").mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -40,7 +48,8 @@ describe("Auth Controller & Routes", () => {
                 designation: "Consultant",
                 email: "dr.perera@forensic.gov",
                 password_hash: hashedPassword,
-                profile_picture_url: null
+                profile_picture_url: null,
+                email_verified: true
             };
 
             getUserByEmailSpy.mockResolvedValue(mockUser);
@@ -112,6 +121,136 @@ describe("Auth Controller & Routes", () => {
 
             expect(response.status).toBe(401);
             expect(response.body.message).toBe("Invalid email or password");
+        });
+    });
+
+    describe("Email verification gate", () => {
+        const futureDate = () => new Date(Date.now() + 10 * 60 * 1000);
+
+        const unverifiedUser = (overrides = {}) => ({
+            id: "USR-2000",
+            name: "Dr. Silva",
+            role: "doctor",
+            designation: "Medical Officer",
+            email: "dr.silva@forensic.gov",
+            password_hash: hashedPassword,
+            profile_picture_url: null,
+            email_verified: false,
+            verification_attempts: 0,
+            ...overrides
+        });
+
+        test("11. Should block login for an unverified account and send a code", async () => {
+            getUserByEmailSpy.mockResolvedValue(unverifiedUser());
+
+            const response = await request(app)
+                .post("/api/auth/login")
+                .send({ email: "dr.silva@forensic.gov", password: "password123" });
+
+            expect(response.status).toBe(403);
+            expect(response.body.verificationRequired).toBe(true);
+            expect(response.body.email).toBe("dr.silva@forensic.gov");
+            expect(response.body).not.toHaveProperty("token");
+            expect(setVerificationCodeSpy).toHaveBeenCalled();
+        });
+
+        test("12. Should verify a correct code and issue a token", async () => {
+            const codeHash = await bcrypt.hash("123456", 10);
+            getUserByEmailSpy.mockResolvedValue(unverifiedUser({
+                verification_code_hash: codeHash,
+                verification_expires_at: futureDate()
+            }));
+            markEmailVerifiedSpy.mockResolvedValue({
+                id: "USR-2000",
+                name: "Dr. Silva",
+                role: "doctor",
+                designation: "Medical Officer",
+                email: "dr.silva@forensic.gov",
+                profile_picture_url: null
+            });
+
+            const response = await request(app)
+                .post("/api/auth/verify-email")
+                .send({ email: "dr.silva@forensic.gov", code: "123456" });
+
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveProperty("token");
+            expect(response.body.user.email).toBe("dr.silva@forensic.gov");
+            expect(markEmailVerifiedSpy).toHaveBeenCalledWith("dr.silva@forensic.gov");
+        });
+
+        test("13. Should reject an incorrect code and count the attempt", async () => {
+            const codeHash = await bcrypt.hash("123456", 10);
+            getUserByEmailSpy.mockResolvedValue(unverifiedUser({
+                verification_code_hash: codeHash,
+                verification_expires_at: futureDate()
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/verify-email")
+                .send({ email: "dr.silva@forensic.gov", code: "999999" });
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe("Invalid or expired verification code");
+            expect(response.body).not.toHaveProperty("token");
+            expect(incrementVerificationAttemptsSpy).toHaveBeenCalledWith("dr.silva@forensic.gov");
+            expect(markEmailVerifiedSpy).not.toHaveBeenCalled();
+        });
+
+        test("14. Should reject an expired code", async () => {
+            const codeHash = await bcrypt.hash("123456", 10);
+            getUserByEmailSpy.mockResolvedValue(unverifiedUser({
+                verification_code_hash: codeHash,
+                verification_expires_at: new Date(Date.now() - 60 * 1000)
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/verify-email")
+                .send({ email: "dr.silva@forensic.gov", code: "123456" });
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toMatch(/expired/i);
+            expect(markEmailVerifiedSpy).not.toHaveBeenCalled();
+        });
+
+        test("15. Should lock out after too many incorrect attempts", async () => {
+            const codeHash = await bcrypt.hash("123456", 10);
+            getUserByEmailSpy.mockResolvedValue(unverifiedUser({
+                verification_code_hash: codeHash,
+                verification_expires_at: futureDate(),
+                verification_attempts: 5
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/verify-email")
+                .send({ email: "dr.silva@forensic.gov", code: "123456" });
+
+            expect(response.status).toBe(429);
+            expect(markEmailVerifiedSpy).not.toHaveBeenCalled();
+        });
+
+        test("16. Should not reveal whether an account exists when resending", async () => {
+            getUserByEmailSpy.mockResolvedValue(undefined);
+
+            const response = await request(app)
+                .post("/api/auth/resend-verification")
+                .send({ email: "nobody@forensic.gov" });
+
+            expect(response.status).toBe(200);
+            expect(setVerificationCodeSpy).not.toHaveBeenCalled();
+        });
+
+        test("17. Should throttle rapid resend requests", async () => {
+            getUserByEmailSpy.mockResolvedValue(unverifiedUser({
+                verification_sent_at: new Date()
+            }));
+
+            const response = await request(app)
+                .post("/api/auth/resend-verification")
+                .send({ email: "dr.silva@forensic.gov" });
+
+            expect(response.status).toBe(429);
+            expect(setVerificationCodeSpy).not.toHaveBeenCalled();
         });
     });
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Activity, AlertCircle, User, Shield } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { toast } from "sonner";
 
 export function LoginPage() {
@@ -26,6 +26,14 @@ export function LoginPage() {
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
+      // Credentials were correct but the address is not confirmed yet — the
+      // backend has already emailed a fresh code, so send them to the code step.
+      if (err instanceof ApiError && err.data?.verificationRequired) {
+        sessionStorage.setItem("pendingVerificationEmail", err.data.email || email.trim());
+        toast.info("Please verify your email address to continue.");
+        navigate("/verify-email");
+        return;
+      }
       setError(err.message || "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);

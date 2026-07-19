@@ -66,9 +66,11 @@ async function seed() {
     const saltRounds = 10;
     for (const u of USERS) {
       const passwordHash = await bcrypt.hash(u.password, saltRounds);
+      // Seeded demo accounts are pre-verified: their addresses are placeholders
+      // that cannot receive mail. Real accounts verify via the login flow.
       const userQuery = `
-        INSERT INTO users (id, name, role, designation, email, phone, password_hash)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO users (id, name, role, designation, email, phone, password_hash, email_verified)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
       `;
       await client.query(userQuery, [u.id, u.name, u.role, u.designation, u.email, u.phone, passwordHash]);
     }

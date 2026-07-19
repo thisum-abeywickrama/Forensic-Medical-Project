@@ -23,6 +23,43 @@ class UserModel {
         return result.rows[0];
     }
 
+    static async setVerificationCode(email, codeHash, expiresAt) {
+        const query = `
+      UPDATE users
+      SET verification_code_hash = $2,
+          verification_expires_at = $3,
+          verification_sent_at = CURRENT_TIMESTAMP,
+          verification_attempts = 0
+      WHERE email = $1;
+    `;
+        await pool.query(query, [email, codeHash, expiresAt]);
+    }
+
+    static async incrementVerificationAttempts(email) {
+        const query = `
+      UPDATE users
+      SET verification_attempts = verification_attempts + 1
+      WHERE email = $1
+      RETURNING verification_attempts;
+    `;
+        const result = await pool.query(query, [email]);
+        return result.rows[0]?.verification_attempts ?? 0;
+    }
+
+    static async markEmailVerified(email) {
+        const query = `
+      UPDATE users
+      SET email_verified = TRUE,
+          verification_code_hash = NULL,
+          verification_expires_at = NULL,
+          verification_attempts = 0
+      WHERE email = $1
+      RETURNING id, name, role, designation, email, profile_picture_url;
+    `;
+        const result = await pool.query(query, [email]);
+        return result.rows[0];
+    }
+
     static async getAllUsers() {
         const query = `SELECT id, name, role, designation, email, phone, profile_picture_url FROM users ORDER BY created_at DESC;`;
         const result = await pool.query(query);

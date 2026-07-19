@@ -27,6 +27,19 @@ export function keysToCamel(o: any): any {
   return o;
 }
 
+/** Error carrying the HTTP status and parsed body so callers can branch on them. */
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
 async function request(path: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
   const headers = new Headers(options.headers || {});
@@ -46,7 +59,11 @@ async function request(path: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.message || `Request failed with status ${response.status}`);
+    throw new ApiError(
+      errData.message || `Request failed with status ${response.status}`,
+      response.status,
+      keysToCamel(errData)
+    );
   }
 
   if (response.status === 204) {
@@ -57,6 +74,15 @@ async function request(path: string, options: RequestInit = {}) {
   return keysToCamel(data);
 }
 
+/** Persist the session returned by /login or /verify-email. */
+function storeSession(res: any) {
+  if (res && res.token) {
+    localStorage.setItem('token', res.token);
+    localStorage.setItem('user', JSON.stringify(res.user));
+  }
+  return res;
+}
+
 export const api = {
   auth: {
     login: async (credentials: any) => {
@@ -64,11 +90,20 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
-      if (res && res.token) {
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('user', JSON.stringify(res.user));
-      }
-      return res;
+      return storeSession(res);
+    },
+    verifyEmail: async (payload: { email: string; code: string }) => {
+      const res = await request('/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return storeSession(res);
+    },
+    resendVerification: async (email: string) => {
+      return request('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
     },
     register: async (userData: any) => {
       return request('/auth/register', {
