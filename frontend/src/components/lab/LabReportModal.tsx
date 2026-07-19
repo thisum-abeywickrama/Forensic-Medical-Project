@@ -23,8 +23,8 @@ export function LabReportModal({ request, patients, currentUser, onSave, onClose
 
   const handleSave = () => {
     onSave(request.id, {
-      testResults, observations, conclusion,
-      labTechName: currentUser.name,
+      testResults: testResults, observations: observations, conclusion: conclusion,
+      labTechId: currentUser.id,
       completedAt: new Date().toISOString(),
       status: "completed",
     });

@@ -70,7 +70,7 @@ export function MLEFForm({ form: initForm, patient: initPatient, allPatients, us
     const updated: MLEFFormType = {
       ...f,
       patientId: selectedPatientId || f.patientId,
-      ...(isAdminEditA && { partAFilledBy: currentUser.name, partAFilledAt: new Date().toISOString() }),
+      ...(isAdminEditA && { partAFilledBy: currentUser.id, partAFilledAt: new Date().toISOString() }),
       ...(isDoctorEditB && { partBFilledBy: currentUser.id, partBFilledAt: new Date().toISOString(), status: "complete" as const }),
     };
     onSave(updated);
