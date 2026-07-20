@@ -52,13 +52,38 @@ async function request(path: string, options: RequestInit = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const method = options.method || 'GET';
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch (err) {
+    // A network-level failure: server down, wrong API URL, CORS, offline.
+    // fetch() gives a near-useless "Failed to fetch", so log the target too.
+    console.error(`Network error on ${method} ${API_BASE_URL}${path}:`, err);
+    throw new ApiError(
+      `Cannot reach the server at ${API_BASE_URL}. Check that the backend is running.`,
+      0,
+      {}
+    );
+  }
 
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
+    // Read as text first: an error body is not always JSON (a proxy or crash can
+    // return HTML), and json() would discard the only useful diagnostic.
+    const raw = await response.text().catch(() => '');
+    let errData: any = {};
+    try {
+      errData = raw ? JSON.parse(raw) : {};
+    } catch {
+      errData = {};
+    }
+
+    console.error(
+      `API error ${response.status} on ${method} ${path}:`,
+      errData.message || raw || response.statusText
+    );
+
     throw new ApiError(
       errData.message || `Request failed with status ${response.status}`,
       response.status,

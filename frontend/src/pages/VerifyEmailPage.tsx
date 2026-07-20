@@ -18,6 +18,11 @@ export function VerifyEmailPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
+  // Set when the server could not actually send mail, so the user is told where
+  // the code really went instead of waiting for an email that will never arrive.
+  const [mailUnavailable, setMailUnavailable] = useState(
+    sessionStorage.getItem("verificationEmailUndelivered") === "true"
+  );
 
   // No pending email means the user landed here directly; send them back.
   useEffect(() => {
@@ -52,9 +57,18 @@ export function VerifyEmailPage() {
     setError("");
     try {
       const res = await api.auth.resendVerification(email);
-      toast.success(res?.message || "A new verification code has been sent.");
+      if (res?.emailDelivered === false) {
+        setMailUnavailable(true);
+        sessionStorage.setItem("verificationEmailUndelivered", "true");
+        toast.warning("Email is not configured on this server. Check the server console for the code.");
+      } else {
+        setMailUnavailable(false);
+        sessionStorage.removeItem("verificationEmailUndelivered");
+        toast.success(res?.message || "A new verification code has been sent.");
+      }
       setCooldown(RESEND_COOLDOWN);
     } catch (err: any) {
+      console.error("Failed to resend verification code:", err);
       setError(err.message || "Could not resend the verification code.");
     }
   };
@@ -88,6 +102,16 @@ export function VerifyEmailPage() {
             We sent a 6-digit code to <span className="font-semibold text-slate-700">{email}</span>.
             Enter it below to activate your account.
           </p>
+
+          {mailUnavailable && (
+            <div className="mb-5 px-3 py-2.5 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-900">
+              <div className="font-semibold mb-1">No email was sent</div>
+              This server has no email credentials configured, so the code was printed to the
+              backend terminal instead — look for a line starting with <code className="font-mono">[DEV]</code>.
+              To send real email, copy <code className="font-mono">backend/.env.example</code> to{" "}
+              <code className="font-mono">backend/.env</code> and fill in the mail settings.
+            </div>
+          )}
 
           <div className="mb-5">
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">

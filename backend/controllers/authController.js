@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import UserModel from "../models/UserModel.js";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../utils/mailer.js";
+import { sendVerificationEmail, sendPasswordResetEmail, isMailConfigured } from "../utils/mailer.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -29,14 +29,17 @@ const issueSession = (user) => ({
     }
 });
 
-// Generate a fresh 6-digit code, store only its hash, and email it to the user
+// Generate a fresh 6-digit code, store only its hash, and email it to the user.
+// Returns the delivery outcome so callers can tell the client whether an email
+// actually went out — a code that only reached the server console should not be
+// reported to the user as "we've sent you an email".
 const startVerification = async (user) => {
     const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
 
     await UserModel.setVerificationCode(user.email, codeHash, expiresAt);
-    await sendVerificationEmail(user.email, user.name, code, CODE_TTL_MINUTES);
+    return sendVerificationEmail(user.email, user.name, code, CODE_TTL_MINUTES);
 };
 
 // Register a new user
@@ -91,10 +94,13 @@ export const loginUser = async (req, res) => {
         // Credentials are valid, but an unverified account cannot enter the system yet.
         // Send a fresh code and let the client redirect to the verification step.
         if (!user.email_verified) {
-            await startVerification(user);
+            const { delivered } = await startVerification(user);
             return res.status(403).json({
-                message: "Please verify your email address to continue. We've sent you a verification code.",
+                message: delivered
+                    ? "Please verify your email address to continue. We've sent you a verification code."
+                    : "Please verify your email address to continue. The code could not be emailed — see the server console.",
                 verificationRequired: true,
+                emailDelivered: delivered,
                 email: user.email
             });
         }
@@ -164,8 +170,11 @@ export const resendVerification = async (req, res) => {
 
         // Always answer the same way whether or not the account exists or is
         // already verified — otherwise this becomes an account-enumeration oracle.
+        // emailDelivered reports whether this server can send mail at all, which
+        // is the same for every address and so reveals nothing about the account.
         const sent = () => res.status(200).json({
-            message: "If that account needs verification, a new code has been sent."
+            message: "If that account needs verification, a new code has been sent.",
+            emailDelivered: isMailConfigured()
         });
 
         if (!user || user.email_verified) {
@@ -203,7 +212,8 @@ export const forgotPassword = async (req, res) => {
         // Identical response whether or not the address is registered, so this
         // endpoint cannot be used to discover which staff emails exist.
         const sent = () => res.status(200).json({
-            message: "If an account exists for that address, a reset code has been sent."
+            message: "If an account exists for that address, a reset code has been sent.",
+            emailDelivered: isMailConfigured()
         });
 
         if (!user) {
@@ -293,6 +303,7 @@ export const getAllUsers = async (req, res) => {
 
         res.status(200).json(safeUsers);
     } catch (error) {
+        console.error("Fetch users error:", error);
         res.status(500).json({ message: "Server error fetching users" });
     }
 };

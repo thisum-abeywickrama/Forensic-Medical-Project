@@ -64,14 +64,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     const fetchData = async () => {
+      const failures: string[] = [];
+
+      // Each resource falls back to an empty list so one failure does not blank
+      // the whole app — but the failure is always logged and surfaced, otherwise
+      // "no records" is indistinguishable from "the server is down".
+      const load = async <T,>(label: string, fn: () => Promise<T>): Promise<T | []> => {
+        try {
+          return await fn();
+        } catch (err) {
+          console.error(`Failed to load ${label}:`, err);
+          failures.push(label);
+          return [];
+        }
+      };
+
       try {
         const [usersData, patientsData, mlefData, mlrData, labData, pmrData] = await Promise.all([
-          api.auth.getUsers().catch(() => []),
-          api.patients.getAll().catch(() => []),
-          api.mlef.getAll().catch(() => []),
-          api.mlr.getAll().catch(() => []),
-          api.lab.getAll().catch(() => []),
-          api.pmr.getAll().catch(() => []),
+          load("staff", () => api.auth.getUsers()),
+          load("patients", () => api.patients.getAll()),
+          load("MLEF forms", () => api.mlef.getAll()),
+          load("MLR reports", () => api.mlr.getAll()),
+          load("lab requests", () => api.lab.getAll()),
+          load("PMR reports", () => api.pmr.getAll()),
         ]);
 
         setUsers(usersData || []);
@@ -88,8 +103,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         syncIdCache("LAB", labData || []);
         syncIdCache("PMR", pmrData || []);
         syncGrievousCache(mlrData || []);
+
+        if (failures.length) {
+          toast.error(
+            `Could not load ${failures.join(", ")}. Check that the backend is running — details are in the browser console.`,
+            { duration: 8000 }
+          );
+        }
       } catch (err) {
         console.error("Error fetching application data from backend:", err);
+        toast.error("Could not load data from the server. See the browser console for details.");
       }
     };
 

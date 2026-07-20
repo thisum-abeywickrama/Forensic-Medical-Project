@@ -30,7 +30,13 @@ export function LoginPage() {
       // backend has already emailed a fresh code, so send them to the code step.
       if (err instanceof ApiError && err.data?.verificationRequired) {
         sessionStorage.setItem("pendingVerificationEmail", err.data.email || email.trim());
-        toast.info("Please verify your email address to continue.");
+        if (err.data.emailDelivered === false) {
+          sessionStorage.setItem("verificationEmailUndelivered", "true");
+          toast.warning("Email is not configured on this server. Check the server console for the code.");
+        } else {
+          sessionStorage.removeItem("verificationEmailUndelivered");
+          toast.info("Please verify your email address to continue.");
+        }
         navigate("/verify-email");
         return;
       }

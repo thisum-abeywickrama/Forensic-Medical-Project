@@ -51,4 +51,22 @@ app.use("/api/mlr", mlrRoutes);
 app.use("/api/pmr", pmrRoutes);
 app.use("/api/lab", labRoutes);
 
+// Catch-all error handler. Any error thrown in a route that is not handled by
+// that route's own try/catch ends up here, so it is always logged with the
+// request that caused it instead of silently hanging or returning an empty body.
+// Must be registered last, and must take four arguments for Express to treat it
+// as an error handler.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    console.error(`Unhandled error on ${req.method} ${req.originalUrl}:`, err);
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(err.status || 500).json({
+        message: "Server error. Check the server console for details."
+    });
+});
+
 export default app;

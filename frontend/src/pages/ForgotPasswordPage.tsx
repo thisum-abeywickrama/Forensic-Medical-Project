@@ -52,6 +52,7 @@ export function ForgotPasswordPage() {
       toast.success("A new reset code has been sent.");
       setCooldown(RESEND_COOLDOWN);
     } catch (err: any) {
+      console.error("Failed to resend reset code:", err);
       setError(err.message || "Could not resend the reset code.");
     }
   };

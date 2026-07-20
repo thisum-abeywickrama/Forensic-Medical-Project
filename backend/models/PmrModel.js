@@ -39,6 +39,7 @@ class PmrModel {
             await client.query('COMMIT');
             return m.id;
         } catch (error) {
+            console.error('PMR transaction failed, rolling back:', error);
             await client.query('ROLLBACK');
             throw error;
         } finally {
@@ -87,6 +88,7 @@ class PmrModel {
             await client.query('COMMIT');
             return id;
         } catch (error) {
+            console.error('PMR transaction failed, rolling back:', error);
             await client.query('ROLLBACK');
             throw error;
         } finally {

@@ -54,6 +54,7 @@ class MlrModel {
             await client.query('COMMIT');
             return m.id;
         } catch (error) {
+            console.error('MLR transaction failed, rolling back:', error);
             await client.query('ROLLBACK');
             throw error;
         } finally {
@@ -116,6 +117,7 @@ class MlrModel {
             await client.query('COMMIT');
             return id;
         } catch (error) {
+            console.error('MLR transaction failed, rolling back:', error);
             await client.query('ROLLBACK');
             throw error;
         } finally {

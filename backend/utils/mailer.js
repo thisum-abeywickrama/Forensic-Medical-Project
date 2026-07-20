@@ -38,6 +38,47 @@ if (gmailUser && gmailPass) {
 
 export const isMailConfigured = () => transporter !== null;
 
+// Say so loudly at startup. A silently unconfigured mail server looks identical
+// to a working one from the browser, which makes it very hard to diagnose.
+if (!transporter) {
+    console.warn(
+        "\n" +
+        "==============================================================\n" +
+        " EMAIL IS NOT CONFIGURED — codes will be printed here, not sent\n" +
+        "--------------------------------------------------------------\n" +
+        " Verification and password reset codes will appear in THIS\n" +
+        " terminal, prefixed with [DEV]. No email will be delivered.\n" +
+        "\n" +
+        " To send real email, copy backend/.env.example to backend/.env\n" +
+        " and set GMAIL_USER and GMAIL_APP_PASSWORD.\n" +
+        "==============================================================\n"
+    );
+}
+
+/**
+ * Deliver a message, reporting rather than throwing on failure.
+ *
+ * A send failure must not fail the request that triggered it: the code is
+ * already stored, so the user can still complete verification from a code
+ * obtained another way (console, resend after fixing config). Throwing here
+ * would surface as a 500 and hide the real cause.
+ */
+async function deliver({ to, subject, text, html, devLabel, code, minutes }) {
+    if (!transporter) {
+        console.log(`[DEV] ${devLabel} for ${to}: ${code} (expires in ${minutes} minutes)`);
+        return { delivered: false, reason: "not_configured" };
+    }
+
+    try {
+        await transporter.sendMail({ from: mailFrom, to, subject, text, html });
+        return { delivered: true };
+    } catch (error) {
+        console.error(`Failed to send "${subject}" to ${to}:`, error.message);
+        console.log(`[DEV] ${devLabel} for ${to}: ${code} (expires in ${minutes} minutes)`);
+        return { delivered: false, reason: "send_failed" };
+    }
+}
+
 function buildHtml(name, code, minutes, intro, outro) {
     return `
     <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1e293b;">
@@ -61,13 +102,7 @@ function buildHtml(name, code, minutes, intro, outro) {
  * CI environments never fail on a missing mail server.
  */
 export async function sendVerificationEmail(email, name, code, minutes) {
-    if (!transporter) {
-        console.log(`[DEV] Verification code for ${email}: ${code} (expires in ${minutes} minutes)`);
-        return { delivered: false };
-    }
-
-    await transporter.sendMail({
-        from: mailFrom,
+    return deliver({
         to: email,
         subject: "Verify your email address",
         text: `Your verification code is ${code}. It expires in ${minutes} minutes.`,
@@ -75,21 +110,15 @@ export async function sendVerificationEmail(email, name, code, minutes) {
             name, code, minutes,
             "Use the verification code below to confirm your email address and activate your account.",
             "If you did not try to sign in, you can ignore this email."
-        )
+        ),
+        devLabel: "Verification code",
+        code, minutes
     });
-
-    return { delivered: true };
 }
 
 /** Send a password reset code. Same console fallback as verification. */
 export async function sendPasswordResetEmail(email, name, code, minutes) {
-    if (!transporter) {
-        console.log(`[DEV] Password reset code for ${email}: ${code} (expires in ${minutes} minutes)`);
-        return { delivered: false };
-    }
-
-    await transporter.sendMail({
-        from: mailFrom,
+    return deliver({
         to: email,
         subject: "Reset your password",
         text: `Your password reset code is ${code}. It expires in ${minutes} minutes.`,
@@ -97,8 +126,8 @@ export async function sendPasswordResetEmail(email, name, code, minutes) {
             name, code, minutes,
             "We received a request to reset your password. Use the code below to choose a new one.",
             "If you did not request a password reset, you can ignore this email — your password will not change."
-        )
+        ),
+        devLabel: "Password reset code",
+        code, minutes
     });
-
-    return { delivered: true };
 }
