@@ -64,7 +64,7 @@ if (!transporter) {
  * would surface as a 500 and hide the real cause.
  */
 async function deliver({ to, subject, text, html, devLabel, code, minutes }) {
-    if (!transporter) {
+    if (!transporter || process.env.NODE_ENV === "test") {
         console.log(`[DEV] ${devLabel} for ${to}: ${code} (expires in ${minutes} minutes)`);
         return { delivered: false, reason: "not_configured" };
     }

@@ -12,14 +12,15 @@
  * downloadability without pulling the PDF engine into the main bundle.
  */
 export function isDownloadable(kind: "mlef" | "mlr" | "pmr" | "lab", status: string): boolean {
-  return true;
+  if (kind === "mlef") return true;
+  return !isDraft(kind, status);
 }
 
 /** Whether an exported record should carry the DRAFT marking. */
 export function isDraft(kind: "mlef" | "mlr" | "pmr" | "lab", status: string): boolean {
   return !(
-    (kind === "mlef" && status === "complete") ||
-    ((kind === "mlr" || kind === "pmr") && status === "submitted") ||
+    (kind === "mlef" && (status === "complete" || status === "completed")) ||
+    ((kind === "mlr" || kind === "pmr") && (status === "submitted" || status === "complete" || status === "completed")) ||
     (kind === "lab" && status === "completed")
   );
 }

@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { jest, describe, test, expect, beforeAll, beforeEach, afterEach } from "@jest/globals";
 
 // Set environment variables for testing
+process.env.NODE_ENV = "test";
 process.env.JWT_SECRET_KEY = "test-secret-key-for-jest";
 
 describe("Auth Controller & Routes", () => {
