@@ -26,11 +26,26 @@ if (missing.length) {
     );
 }
 
+// Run database schema migrations
+const runAutoMigrate = async () => {
+    try {
+        console.log("Ensuring database columns exist...");
+        await pool.query("ALTER TABLE mlef_forms ADD COLUMN IF NOT EXISTS part_a_pdf_url VARCHAR(500);");
+        await pool.query("ALTER TABLE mlef_forms ADD COLUMN IF NOT EXISTS part_b_pdf_url VARCHAR(500);");
+        await pool.query("ALTER TABLE mlr_reports ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(500);");
+        await pool.query("ALTER TABLE pmr_forms ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(500);");
+        console.log("Database columns migration checked successfully!");
+    } catch (err) {
+        console.error("Auto migration check error:", err);
+    }
+};
+
 // Test database connection
 pool.connect()
-    .then(client => {
+    .then(async client => {
         console.log("Connected to PostgreSQL successfully");
         client.release();
+        await runAutoMigrate();
     })
     .catch(err => {
         console.error(

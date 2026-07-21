@@ -49,7 +49,7 @@ export function PMRFormPage() {
         currentUser={currentUser}
         labRequest={labRequest}
         readOnly={readOnly}
-        onSave={f => { savePmrForm(f); navigate("/pmr"); }}
+        onSave={async f => { await savePmrForm(f); navigate("/pmr"); }}
         onBack={() => navigate("/pmr")}
         onRequestLab={(pid, fid, ftype, onLink) => {
           setLabCtx({ patientId: pid, formId: fid, formType: ftype, onLink });

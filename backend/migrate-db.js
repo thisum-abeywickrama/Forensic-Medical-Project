@@ -39,6 +39,13 @@ async function migrate() {
         await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_sent_at TIMESTAMP;");
         await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_attempts INTEGER NOT NULL DEFAULT 0;");
 
+        // Add PDF URL columns for forms
+        console.log("Adding PDF URL columns to mlef_forms, mlr_reports, and pmr_forms...");
+        await pool.query("ALTER TABLE mlef_forms ADD COLUMN IF NOT EXISTS part_a_pdf_url VARCHAR(500);");
+        await pool.query("ALTER TABLE mlef_forms ADD COLUMN IF NOT EXISTS part_b_pdf_url VARCHAR(500);");
+        await pool.query("ALTER TABLE mlr_reports ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(500);");
+        await pool.query("ALTER TABLE pmr_forms ADD COLUMN IF NOT EXISTS pdf_url VARCHAR(500);");
+
         // Ensure bucket exists in storage.buckets
         console.log("Ensuring images storage bucket exists...");
         await pool.query(`

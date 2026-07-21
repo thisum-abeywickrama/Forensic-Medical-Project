@@ -12,10 +12,10 @@ class MlrModel {
           blunt_weapon_nos, blunt_contusion_nos, cut_nos, sharp_cutting_nos, stab_nos,
           firearms_nos, burns_nos, bite_nos, further_notes, patient_smell_liquor,
           under_influence_liquor, doctor_name, doctor_qualifications, designation,
-          station, date_of_despatch, lab_request_id, status, created_by
+          station, date_of_despatch, lab_request_id, pdf_url, status, created_by
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
         )
         RETURNING *;
       `;
@@ -24,7 +24,7 @@ class MlrModel {
                 m.bluntWeaponNos, m.bluntContusionNos, m.cutNos, m.sharpCuttingNos, m.stabNos,
                 m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes, m.patientSmellLiquor,
                 m.underInfluenceLiquor, m.doctorName, m.doctorQualifications, m.designation,
-                m.station, m.dateOfDespatch, m.labRequestId, m.status, m.createdBy
+                m.station, m.dateOfDespatch, m.labRequestId, m.pdfUrl || m.pdf_url, m.status, m.createdBy
             ];
 
             await client.query(query, values);
@@ -74,8 +74,8 @@ class MlrModel {
           stab_nos = $8, firearms_nos = $9, burns_nos = $10, bite_nos = $11, further_notes = $12,
           patient_smell_liquor = $13, under_influence_liquor = $14, doctor_name = $15,
           doctor_qualifications = $16, designation = $17, station = $18, date_of_despatch = $19,
-          lab_request_id = $20, status = $21
-        WHERE id = $22;
+          lab_request_id = $20, pdf_url = $21, status = $22
+        WHERE id = $23;
       `;
             const values = [
                 m.specialInvestigations, m.nonGrievousNos, m.deathCausingCount,
@@ -83,7 +83,7 @@ class MlrModel {
                 m.stabNos, m.firearmsNos, m.burnsNos, m.biteNos, m.furtherNotes,
                 m.patientSmellLiquor, m.underInfluenceLiquor, m.doctorName,
                 m.doctorQualifications, m.designation, m.station, m.dateOfDespatch,
-                m.labRequestId, m.status, id
+                m.labRequestId, m.pdfUrl || m.pdf_url, m.status, id
             ];
 
             await client.query(query, values);

@@ -45,7 +45,7 @@ export function MLEFFormPage() {
         userRole={currentUser.role}
         currentUser={currentUser}
         labRequest={labRequest}
-        onSave={(f: MLEFFormType) => { saveMlefForm(f); navigate("/mlef"); }}
+        onSave={async (f: MLEFFormType) => { await saveMlefForm(f); navigate("/mlef"); }}
         onBack={() => navigate("/mlef")}
         onRequestLab={handleRequestLab}
       />

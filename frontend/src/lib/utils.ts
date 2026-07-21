@@ -44,3 +44,23 @@ export function genId(prefix: string): string {
     return `${outputPrefix}-${currentYear}-${max + 1}`;
   }
 }
+
+export async function downloadFileFromUrl(url: string, defaultFilename?: string) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    const urlFilename = url.split("/").pop()?.split("?")[0];
+    a.download = defaultFilename || urlFilename || "uploaded_document.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error("Direct fetch download failed, falling back to window.open:", err);
+    window.open(url, "_blank");
+  }
+}

@@ -12,13 +12,7 @@
  * downloadability without pulling the PDF engine into the main bundle.
  */
 export function isDownloadable(kind: "mlef" | "mlr" | "pmr" | "lab", status: string): boolean {
-  switch (kind) {
-    case "mlef": return true;
-    case "mlr":
-    case "pmr": return status === "submitted";
-    case "lab": return status === "completed";
-    default: return false;
-  }
+  return true;
 }
 
 /** Whether an exported record should carry the DRAFT marking. */

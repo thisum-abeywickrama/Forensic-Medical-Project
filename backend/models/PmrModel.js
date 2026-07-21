@@ -10,17 +10,17 @@ class PmrModel {
         INSERT INTO pmr_forms (
           id, patient_id, inquest_no, place, courts, date, case_no, deceased_name, 
           date_time_of_death, doctor_conducting, date_time_of_exam, place_of_exam, 
-          district, requestor_name, requestor_designation, jmo_name, lab_request_id, status, created_by
+          district, requestor_name, requestor_designation, jmo_name, lab_request_id, pdf_url, status, created_by
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
         )
         RETURNING *;
       `;
             const values = [
                 m.id, m.patientId, m.inquestNo, m.place, m.courts, m.date, m.caseNo, m.deceasedName,
                 m.dateTimeOfDeath, m.doctorConducting, m.dateTimeOfExam, m.placeOfExam,
-                m.district, m.requestorName, m.requestorDesignation, m.jmoName, m.labRequestId, m.status, m.createdBy
+                m.district, m.requestorName, m.requestorDesignation, m.jmoName, m.labRequestId, m.pdfUrl || m.pdf_url, m.status, m.createdBy
             ];
 
             await client.query(query, values);
@@ -58,15 +58,15 @@ class PmrModel {
           deceased_name = $6, date_time_of_death = $7, doctor_conducting = $8, 
           date_time_of_exam = $9, place_of_exam = $10, district = $11, 
           requestor_name = $12, requestor_designation = $13, jmo_name = $14, 
-          lab_request_id = $15, status = $16
-        WHERE id = $17;
+          lab_request_id = $15, pdf_url = $16, status = $17
+        WHERE id = $18;
       `;
             const values = [
                 m.inquestNo, m.place, m.courts, m.date, m.caseNo,
                 m.deceasedName, m.dateTimeOfDeath, m.doctorConducting,
                 m.dateTimeOfExam, m.placeOfExam, m.district,
                 m.requestorName, m.requestorDesignation, m.jmoName,
-                m.labRequestId, m.status, id
+                m.labRequestId, m.pdfUrl || m.pdf_url, m.status, id
             ];
 
             await client.query(query, values);

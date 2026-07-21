@@ -11,10 +11,11 @@ export const WEAPON_LABELS = toLabelMap(WEAPON_OPTIONS);
 export const SEXUAL_ASSAULT_LABELS = toLabelMap(SEXUAL_ASSAULT_OPTIONS);
 
 /** Safe, readable download filename: MLEF-2026-001_Ruwan-Kumara.pdf */
-export function fileName(reportId: string, patientName?: string): string {
-  const clean = (s: string) => s.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const suffix = patientName ? `_${clean(patientName)}` : "";
-  return `${clean(reportId)}${suffix}.pdf`;
+export function fileName(reportId?: string | null, patientName?: string | null): string {
+  const clean = (s?: string | null) => (s ?? "").trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const baseId = clean(reportId) || "Report";
+  const suffix = patientName && clean(patientName) ? `_${clean(patientName)}` : "";
+  return `${baseId}${suffix}.pdf`;
 }
 
 /** The patient details block, identical across all four report types. */

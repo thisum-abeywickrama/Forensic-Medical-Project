@@ -10,3 +10,4 @@ export { RadioGroup } from "./RadioGroup";
 export { PageHeader } from "./PageHeader";
 export { UrgencyBadge } from "./UrgencyBadge";
 export { ReadOnlyBanner } from "./ReadOnlyBanner";
+export { PdfUpload } from "./PdfUpload";

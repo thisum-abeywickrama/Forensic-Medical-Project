@@ -151,32 +151,56 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const saveMlefForm = async (f: MLEFForm) => {
     try {
-      const saved = await api.mlef.save(f);
       setMlefForms(prev => {
-        const next = prev.some(x => x.id === saved.id) ? prev.map(x => x.id === saved.id ? saved : x) : [...prev, saved];
+        const next = prev.some(x => x.id === f.id) ? prev.map(x => x.id === f.id ? f : x) : [...prev, f];
+        syncIdCache("MLEF", next);
+        return next;
+      });
+      const saved = await api.mlef.save(f);
+      const normalizedSaved = {
+        ...saved,
+        partAPdfUrl: saved.partAPdfUrl || (saved as any).part_a_pdf_url || f.partAPdfUrl,
+        partBPdfUrl: saved.partBPdfUrl || (saved as any).part_b_pdf_url || f.partBPdfUrl,
+      };
+      setMlefForms(prev => {
+        const next = prev.map(x => x.id === normalizedSaved.id ? normalizedSaved : x);
         syncIdCache("MLEF", next);
         return next;
       });
       toast.success(`MLEF Form ${saved.id} saved successfully!`);
+      return normalizedSaved;
     } catch (err) {
       console.error("Failed to save MLEF form:", err);
       toast.error(`Failed to save MLEF Form ${f.id}`);
+      throw err;
     }
   };
 
   const saveMlrReport = async (r: MLRReport) => {
     try {
-      const saved = await api.mlr.save(r);
       setMlrReports(prev => {
-        const next = prev.some(x => x.id === saved.id) ? prev.map(x => x.id === saved.id ? saved : x) : [...prev, saved];
+        const next = prev.some(x => x.id === r.id) ? prev.map(x => x.id === r.id ? r : x) : [...prev, r];
+        syncIdCache("MLR", next);
+        syncGrievousCache(next);
+        return next;
+      });
+      const saved = await api.mlr.save(r);
+      const normalizedSaved = {
+        ...saved,
+        pdfUrl: saved.pdfUrl || (saved as any).pdf_url || r.pdfUrl,
+      };
+      setMlrReports(prev => {
+        const next = prev.map(x => x.id === normalizedSaved.id ? normalizedSaved : x);
         syncIdCache("MLR", next);
         syncGrievousCache(next);
         return next;
       });
       toast.success(`MLR Report ${saved.id} saved successfully!`);
+      return normalizedSaved;
     } catch (err) {
       console.error("Failed to save MLR report:", err);
       toast.error(`Failed to save MLR Report ${r.id}`);
+      throw err;
     }
   };
 
@@ -257,16 +281,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const savePmrForm = async (f: PMRForm) => {
     try {
-      const saved = await api.pmr.save(f);
       setPmrForms(prev => {
-        const next = prev.some(x => x.id === saved.id) ? prev.map(x => x.id === saved.id ? saved : x) : [...prev, saved];
+        const next = prev.some(x => x.id === f.id) ? prev.map(x => x.id === f.id ? f : x) : [...prev, f];
+        syncIdCache("PMR", next);
+        return next;
+      });
+      const saved = await api.pmr.save(f);
+      const normalizedSaved = {
+        ...saved,
+        pdfUrl: saved.pdfUrl || (saved as any).pdf_url || f.pdfUrl,
+      };
+      setPmrForms(prev => {
+        const next = prev.map(x => x.id === normalizedSaved.id ? normalizedSaved : x);
         syncIdCache("PMR", next);
         return next;
       });
       toast.success(`PMR Form ${saved.id} saved successfully!`);
+      return normalizedSaved;
     } catch (err) {
       console.error("Failed to save PMR form:", err);
       toast.error(`Failed to save PMR Form ${f.id}`);
+      throw err;
     }
   };
 

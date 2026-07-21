@@ -76,6 +76,8 @@ export interface MLEFForm {
   slmcRegNo: string;
   doctorDesignation: string;
   refNo: string;
+  partAPdfUrl?: string;
+  partBPdfUrl?: string;
   partBFilledBy: string;
   partBFilledAt: string;
   labRequestId: string;
@@ -122,6 +124,7 @@ export interface MLRReport {
   station: string;
   dateOfDespatch: string;
   labRequestId: string;
+  pdfUrl?: string;
   status: FormStatus;
   createdAt: string;
   createdBy: string;
@@ -171,6 +174,7 @@ export interface PMRForm {
   identifiers: BodyIdentifier[];
   jmoName: string;
   labRequestId: string;
+  pdfUrl?: string;
   status: FormStatus;
   createdAt: string;
   createdBy: string;

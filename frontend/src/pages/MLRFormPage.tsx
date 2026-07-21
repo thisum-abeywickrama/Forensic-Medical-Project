@@ -40,7 +40,7 @@ export function MLRFormPage() {
         currentUser={currentUser}
         labRequest={labRequest}
         readOnly={readOnly}
-        onSave={r => { saveMlrReport(r); navigate("/mlr"); }}
+        onSave={async r => { await saveMlrReport(r); navigate("/mlr"); }}
         onBack={() => navigate("/mlr")}
         onRequestLab={(pid, fid, ftype) => { setLabCtx({ patientId: pid, formId: fid, formType: ftype }); setShowLabModal(true); }}
       />

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Save, FlaskConical, Eye, Plus, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, FlaskConical, Eye, Plus, X, Download } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Btn } from "@/components/ui/Btn";
 import { Input } from "@/components/ui/Input";
@@ -7,7 +7,10 @@ import { Select } from "@/components/ui/Select";
 import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { genId } from "@/lib/utils";
+import { PdfUpload } from "@/components/ui/PdfUpload";
+import { genId, downloadFileFromUrl } from "@/lib/utils";
+import { downloadPmrPdf } from "@/lib/pdf";
+import { toast } from "sonner";
 import type { PMRForm as PMRFormType, Patient, AppUser, LabRequest, BodyIdentifier } from "@/types";
 
 interface Props {
@@ -45,6 +48,15 @@ export function PMRForm({ form: initForm, patient: initPatient, allPatients, cur
     labRequestId: "", status: "draft", createdAt: now, createdBy: currentUser.id,
   });
 
+  useEffect(() => {
+    if (initForm) {
+      setF({
+        ...initForm,
+        pdfUrl: initForm.pdfUrl || (initForm as any).pdf_url || "",
+      });
+    }
+  }, [initForm]);
+
   const handleSelectPatient = (pId: string) => {
     setSelectedPatientId(pId);
     const p = allPatients.find(x => x.id === pId);
@@ -74,6 +86,18 @@ export function PMRForm({ form: initForm, patient: initPatient, allPatients, cur
     }));
   };
 
+  const handleDownloadUploadedDocs = () => {
+    const pdf = f.pdfUrl || (f as any).pdf_url;
+
+    if (!pdf) {
+      toast.info("No uploaded document available for this PMR report yet.");
+      return;
+    }
+
+    downloadFileFromUrl(pdf, `${f.id}_Uploaded_Copy.pdf`);
+    toast.success("Downloading uploaded document…");
+  };
+
   return (
     <div>
       <PageHeader
@@ -82,6 +106,23 @@ export function PMRForm({ form: initForm, patient: initPatient, allPatients, cur
         onBack={onBack}
         actions={
           <div className="flex gap-2">
+            <Btn variant="secondary" size="sm" icon={<Download size={13} />} onClick={handleDownloadUploadedDocs}>
+              Download Documents
+            </Btn>
+            {!isNew && (
+              <Btn variant="secondary" size="sm" icon={<Download size={13} />}
+                onClick={async () => {
+                  try {
+                    await downloadPmrPdf(f, patient, currentUser.name);
+                    toast.success("Generated report PDF downloaded.");
+                  } catch (err) {
+                    console.error("Failed to generate PMR PDF:", err);
+                    toast.error("Failed to generate PDF.");
+                  }
+                }}>
+                Generate Report PDF
+              </Btn>
+            )}
             {!readOnly && !f.labRequestId && (
               <Btn variant="secondary" size="sm" icon={<FlaskConical size={13} />}
                 disabled={!f.patientId}
@@ -92,7 +133,7 @@ export function PMRForm({ form: initForm, patient: initPatient, allPatients, cur
             {!readOnly && (
               <Btn variant="primary" icon={<Save size={14} />}
                 disabled={!f.patientId}
-                onClick={() => { onSave({ ...f, status: "submitted" }); onBack(); }}>
+                onClick={() => { onSave({ ...f, pdfUrl: f.pdfUrl || (f as any).pdf_url || "", status: "submitted" }); onBack(); }}>
                 Save PMR Report
               </Btn>
             )}
@@ -202,6 +243,17 @@ export function PMRForm({ form: initForm, patient: initPatient, allPatients, cur
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <FormField label="JMO Conducting Name"><Input value={f.jmoName} disabled={true} className="bg-slate-50 border-slate-200 text-slate-500 font-semibold" /></FormField>
           </div>
+          <PdfUpload
+            label="Upload PMR Form PDF Copy"
+            formType="pmr"
+            pdfUrl={f.pdfUrl || (f as any).pdf_url}
+            disabled={readOnly}
+            onUploadComplete={url => {
+              setF(prev => ({ ...prev, pdfUrl: url, pdf_url: url }));
+              toast.success("PMR Form PDF attached! Click 'Save' to persist to database.");
+            }}
+            onRemove={() => setF(prev => ({ ...prev, pdfUrl: "", pdf_url: "" }))}
+          />
         </FormSection>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, FileText } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { FormList } from "@/components/forms/FormList";
 import { downloadMlefPdf } from "@/lib/pdf";
@@ -33,17 +33,39 @@ export function MLEFListPage() {
       newLabel="New MLEF"
       onDownload={handleDownload}
       canDownload={item => isDownloadable("mlef", item.status)}
-      renderExtra={item => (
-        <div className="text-xs text-slate-400 mt-0.5">
-          {item.mlefNo && <span>MLEF No: {item.mlefNo} · </span>}
-          Police: {item.partAFilledAt
-            ? <span className="text-emerald-600">✓ Filled</span>
-            : <span className="text-amber-600">Pending</span>}
-          {" · "}Medical: {item.partBFilledAt
-            ? <span className="text-emerald-600">✓ Filled</span>
-            : <span className="text-amber-600">Pending</span>}
-        </div>
-      )}
+      renderExtra={item => {
+        const pA = item.partAPdfUrl || (item as any).part_a_pdf_url;
+        const pB = item.partBPdfUrl || (item as any).part_b_pdf_url;
+        return (
+          <div className="text-xs text-slate-400 mt-0.5 space-y-0.5">
+            <div>
+              {item.mlefNo && <span>MLEF No: {item.mlefNo} · </span>}
+              Police: {item.partAFilledAt
+                ? <span className="text-emerald-600 font-medium">✓ Filled</span>
+                : <span className="text-amber-600">Pending</span>}
+              {" · "}Medical: {item.partBFilledAt
+                ? <span className="text-emerald-600 font-medium">✓ Filled</span>
+                : <span className="text-amber-600">Pending</span>}
+            </div>
+            {(pA || pB) && (
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-0.5">
+                <span className="font-semibold text-slate-600">Uploaded Copies:</span>
+                {pA && (
+                  <a href={pA} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium inline-flex items-center gap-0.5">
+                    Part A PDF <FileText size={11} />
+                  </a>
+                )}
+                {pA && pB && <span>·</span>}
+                {pB && (
+                  <a href={pB} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium inline-flex items-center gap-0.5">
+                    Part B PDF <FileText size={11} />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }}
     />
   );
 }

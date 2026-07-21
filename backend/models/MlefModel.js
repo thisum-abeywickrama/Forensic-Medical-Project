@@ -11,12 +11,12 @@ class MlefModel {
         causative_weapon, causative_weapon_other, hurt_category, endangers_life, alcohol_exam,
         drugs_exam, sexual_assault_signs, brief_history, exam_findings, investigations, referrals,
         other_opinions, remarks, doctor_name, doctor_qualifications, slmc_reg_no, doctor_designation,
-        ref_no, part_b_filled_by, part_b_filled_at, lab_request_id, status, created_by
+        ref_no, part_a_pdf_url, part_b_pdf_url, part_b_filled_by, part_b_filled_at, lab_request_id, status, created_by
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
-        $39, $40, $41, $42, $43, $44, $45, $46, $47, $48
+        $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
       )
       RETURNING *;
     `;
@@ -28,7 +28,7 @@ class MlefModel {
             m.causativeWeapon, m.causativeWeaponOther, m.hurtCategory, m.endangersLife, m.alcoholExam,
             m.drugsExam, m.sexualAssaultSigns, m.briefHistory, m.examFindings, m.investigations, m.referrals,
             m.otherOpinions, m.remarks, m.doctorName, m.doctorQualifications, m.slmcRegNo, m.doctorDesignation,
-            m.refNo, m.partBFilledBy, m.partBFilledAt, m.labRequestId, m.status, m.createdBy
+            m.refNo, m.partAPdfUrl || m.part_a_pdf_url, m.partBPdfUrl || m.part_b_pdf_url, m.partBFilledBy, m.partBFilledAt, m.labRequestId, m.status, m.createdBy
         ];
 
         const result = await pool.query(query, values);
@@ -47,9 +47,9 @@ class MlefModel {
         alcohol_exam = $28, drugs_exam = $29, sexual_assault_signs = $30, brief_history = $31,
         exam_findings = $32, investigations = $33, referrals = $34, other_opinions = $35,
         remarks = $36, doctor_name = $37, doctor_qualifications = $38, slmc_reg_no = $39,
-        doctor_designation = $40, ref_no = $41, part_b_filled_by = $42, part_b_filled_at = $43,
-        lab_request_id = $44, status = $45
-      WHERE id = $46
+        doctor_designation = $40, ref_no = $41, part_a_pdf_url = $42, part_b_pdf_url = $43,
+        part_b_filled_by = $44, part_b_filled_at = $45, lab_request_id = $46, status = $47
+      WHERE id = $48
       RETURNING *;
     `;
         const values = [
@@ -62,8 +62,8 @@ class MlefModel {
             m.alcoholExam, m.drugsExam, m.sexualAssaultSigns, m.briefHistory,
             m.examFindings, m.investigations, m.referrals, m.otherOpinions,
             m.remarks, m.doctorName, m.doctorQualifications, m.slmcRegNo,
-            m.doctorDesignation, m.refNo, m.partBFilledBy, m.partBFilledAt,
-            m.labRequestId, m.status, id
+            m.doctorDesignation, m.refNo, m.partAPdfUrl || m.part_a_pdf_url, m.partBPdfUrl || m.part_b_pdf_url,
+            m.partBFilledBy, m.partBFilledAt, m.labRequestId, m.status, id
         ];
 
         const result = await pool.query(query, values);

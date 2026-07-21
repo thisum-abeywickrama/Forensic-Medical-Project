@@ -33,6 +33,16 @@ export function MLRListPage() {
       newLabel="New MLR Report"
       onDownload={handleDownload}
       canDownload={item => isDownloadable("mlr", item.status)}
+      renderExtra={item => {
+        const pdf = item.pdfUrl || (item as any).pdf_url;
+        return pdf ? (
+          <div className="text-xs text-slate-400 mt-0.5">
+            <a href={pdf} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium inline-flex items-center gap-1">
+              <FileText size={11} /> View Uploaded PDF Copy
+            </a>
+          </div>
+        ) : null;
+      }}
     />
   );
 }

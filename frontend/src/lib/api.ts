@@ -266,6 +266,44 @@ export const api = {
       }
 
       return `${SUPABASE_URL}/storage/v1/object/public/images/profile-pictures/${filename}`;
+    },
+    uploadFormPdf: async (file: File, formType: string): Promise<string> => {
+      const SUPABASE_URL = 'https://fbhptjotfpxxqqtlzqzz.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiaHB0am90ZnB4eHFxdGx6cXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzEyMjIsImV4cCI6MjA5NzgwNzIyMn0.-zssqbgvrTH1jqyXOFn3lwpZ1Xja7YRaBQHNSG1NdXI';
+
+      const lastDot = file.name.lastIndexOf('.');
+      const ext = lastDot !== -1 ? file.name.substring(lastDot) : '.pdf';
+      const baseName = lastDot !== -1 ? file.name.substring(0, lastDot) : file.name;
+      const cleanBaseName = baseName.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `${cleanBaseName}_${Date.now()}${ext}`;
+
+      const cleanFormType = formType.toLowerCase().trim();
+      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/images/forms/${cleanFormType}/${filename}`;
+
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': file.type || 'application/pdf',
+        },
+        body: file,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Supabase form PDF upload error:', errText);
+        let message = response.statusText;
+        try {
+          const parsed = JSON.parse(errText);
+          message = parsed.message || parsed.error || errText;
+        } catch (_) {
+          message = errText || response.statusText;
+        }
+        throw new Error(`Failed to upload PDF copy to storage: ${message}`);
+      }
+
+      return `${SUPABASE_URL}/storage/v1/object/public/images/forms/${cleanFormType}/${filename}`;
     }
   }
 };

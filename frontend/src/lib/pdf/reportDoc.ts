@@ -102,7 +102,7 @@ export class ReportDoc {
     // Report id, right aligned in the banner
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text(this.meta.reportId, this.pageWidth - MARGIN, 12, { align: "right" });
+    doc.text(this.meta.reportId || "UNSAVED", this.pageWidth - MARGIN, 12, { align: "right" });
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.text(

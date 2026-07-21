@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Save, FlaskConical, Plus, X, Eye, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, FlaskConical, Plus, X, Eye, ChevronDown, Download } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Btn } from "@/components/ui/Btn";
 import { Input } from "@/components/ui/Input";
@@ -8,7 +8,10 @@ import { Select } from "@/components/ui/Select";
 import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PdfUpload } from "@/components/ui/PdfUpload";
 import { genId, cls } from "@/lib/utils";
+import { downloadMlrPdf } from "@/lib/pdf";
+import { toast } from "sonner";
 import type { MLRReport, InjuryEntry, GrievousEntry, Patient, AppUser, LabRequest } from "@/types";
 
 interface Props {
@@ -104,6 +107,15 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
     labRequestId: "", status: "draft", createdAt: now, createdBy: currentUser.id,
   });
 
+  useEffect(() => {
+    if (initForm) {
+      setF({
+        ...initForm,
+        pdfUrl: initForm.pdfUrl || (initForm as any).pdf_url || "",
+      });
+    }
+  }, [initForm]);
+
   const s = (k: keyof MLRReport) => (v: string) => setF(prev => ({ ...prev, [k]: v }));
 
   // Injury table helpers
@@ -132,6 +144,18 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
   // Injury numbers available from Section C
   const injuryNos = f.injuries.map(inj => inj.no).filter(n => n.trim() !== "");
 
+  const handleDownloadUploadedDocs = () => {
+    const pdf = f.pdfUrl || (f as any).pdf_url;
+
+    if (!pdf) {
+      toast.info("No uploaded document available for this MLR report yet.");
+      return;
+    }
+
+    downloadFileFromUrl(pdf, `${f.id}_Uploaded_Copy.pdf`);
+    toast.success("Downloading uploaded document…");
+  };
+
   return (
     <div>
       <PageHeader
@@ -140,6 +164,23 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
         onBack={onBack}
         actions={
           <div className="flex gap-2">
+            <Btn variant="secondary" size="sm" icon={<Download size={13} />} onClick={handleDownloadUploadedDocs}>
+              Download Documents
+            </Btn>
+            {!isNew && (
+              <Btn variant="secondary" size="sm" icon={<Download size={13} />}
+                onClick={async () => {
+                  try {
+                    await downloadMlrPdf(f, patient, currentUser.name);
+                    toast.success("Generated report PDF downloaded.");
+                  } catch (err) {
+                    console.error("Failed to generate MLR PDF:", err);
+                    toast.error("Failed to generate PDF.");
+                  }
+                }}>
+                Generate Report PDF
+              </Btn>
+            )}
             {!readOnly && !f.labRequestId && (
               <Btn variant="secondary" size="sm" icon={<FlaskConical size={13} />}
                 onClick={() => onRequestLab(f.patientId, f.id, "mlr")}>
@@ -148,7 +189,7 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
             )}
             {!readOnly && (
               <Btn variant="primary" icon={<Save size={14} />}
-                onClick={() => { onSave({ ...f, status: "submitted" }); onBack(); }}>
+                onClick={() => { onSave({ ...f, pdfUrl: f.pdfUrl || (f as any).pdf_url || "", status: "submitted" }); onBack(); }}>
                 Save Report
               </Btn>
             )}
@@ -367,6 +408,17 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
             <FormField label="Station"><Input value={f.station} onChange={s("station")} disabled={readOnly} /></FormField>
             <FormField label="Date of Despatch"><Input type="date" value={f.dateOfDespatch} onChange={s("dateOfDespatch")} disabled={readOnly} /></FormField>
           </div>
+          <PdfUpload
+            label="Upload MLR Report PDF Copy"
+            formType="mlr"
+            pdfUrl={f.pdfUrl || (f as any).pdf_url}
+            disabled={readOnly}
+            onUploadComplete={url => {
+              setF(prev => ({ ...prev, pdfUrl: url, pdf_url: url }));
+              toast.success("MLR Report PDF attached! Click 'Save' to persist to database.");
+            }}
+            onRemove={() => setF(prev => ({ ...prev, pdfUrl: "", pdf_url: "" }))}
+          />
         </FormSection>
       </div>
     </div>

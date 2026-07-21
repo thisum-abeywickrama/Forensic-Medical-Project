@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Save, FlaskConical } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, FlaskConical, Download } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Btn } from "@/components/ui/Btn";
 import { Input } from "@/components/ui/Input";
@@ -11,7 +11,10 @@ import { CheckGroup } from "@/components/ui/CheckGroup";
 import { RadioGroup } from "@/components/ui/RadioGroup";
 import { ReadOnlyBanner } from "@/components/ui/ReadOnlyBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { genId } from "@/lib/utils";
+import { PdfUpload } from "@/components/ui/PdfUpload";
+import { genId, downloadFileFromUrl } from "@/lib/utils";
+import { downloadMlefPdf } from "@/lib/pdf";
+import { toast } from "sonner";
 import { BODY_HARM_OPTIONS, WEAPON_OPTIONS, SEXUAL_ASSAULT_OPTIONS } from "@/data/mockData";
 import type { MLEFForm as MLEFFormType, Patient, AppUser, LabRequest, Role } from "@/types";
 
@@ -52,6 +55,16 @@ export function MLEFForm({ form: initForm, patient: initPatient, allPatients, us
     status: "draft", createdAt: now, createdBy: currentUser.id,
   });
 
+  useEffect(() => {
+    if (initForm) {
+      setF({
+        ...initForm,
+        partAPdfUrl: initForm.partAPdfUrl || (initForm as any).part_a_pdf_url || "",
+        partBPdfUrl: initForm.partBPdfUrl || (initForm as any).part_b_pdf_url || "",
+      });
+    }
+  }, [initForm]);
+
   const s = (k: keyof MLEFFormType) => (v: string) => setF(prev => ({ ...prev, [k]: v }));
 
   const toggleArr = (key: "bodyHarmTypes" | "causativeWeapon" | "sexualAssaultSigns", val: string) => {
@@ -66,9 +79,29 @@ export function MLEFForm({ form: initForm, patient: initPatient, allPatients, us
   const hasPartA = !!f.partAFilledAt;
   const hasPartB = !!f.partBFilledAt;
 
+  const handleDownloadUploadedDocs = () => {
+    const partA = f.partAPdfUrl || (f as any).part_a_pdf_url;
+    const partB = f.partBPdfUrl || (f as any).part_b_pdf_url;
+
+    if (!partA && !partB) {
+      toast.info("No uploaded documents available for this MLEF form yet.");
+      return;
+    }
+
+    if (partA) {
+      downloadFileFromUrl(partA, `${f.id}_PartA_Police.pdf`);
+    }
+    if (partB) {
+      downloadFileFromUrl(partB, `${f.id}_PartB_Medical.pdf`);
+    }
+    toast.success("Downloading uploaded document(s)…");
+  };
+
   const handleSave = () => {
     const updated: MLEFFormType = {
       ...f,
+      partAPdfUrl: f.partAPdfUrl || (f as any).part_a_pdf_url || "",
+      partBPdfUrl: f.partBPdfUrl || (f as any).part_b_pdf_url || "",
       patientId: selectedPatientId || f.patientId,
       ...(isAdminEditA && { partAFilledBy: currentUser.name, partAFilledAt: new Date().toISOString() }),
       ...(isDoctorEditB && { partBFilledBy: currentUser.id, partBFilledAt: new Date().toISOString(), status: "complete" as const }),
@@ -85,6 +118,23 @@ export function MLEFForm({ form: initForm, patient: initPatient, allPatients, us
         onBack={onBack}
         actions={
           <div className="flex gap-2">
+            <Btn variant="secondary" size="sm" icon={<Download size={13} />} onClick={handleDownloadUploadedDocs}>
+              Download Documents
+            </Btn>
+            {!isNew && (
+              <Btn variant="secondary" size="sm" icon={<Download size={13} />}
+                onClick={async () => {
+                  try {
+                    await downloadMlefPdf(f, patient, currentUser.name);
+                    toast.success("Generated report PDF downloaded.");
+                  } catch (err) {
+                    console.error("Failed to generate MLEF PDF:", err);
+                    toast.error("Failed to generate PDF.");
+                  }
+                }}>
+                Generate Report PDF
+              </Btn>
+            )}
             {isDoctorEditB && !f.labRequestId && (
               <Btn variant="secondary" size="sm" icon={<FlaskConical size={13} />}
                 onClick={() => onRequestLab(f.patientId, f.id, "mlef")}>
@@ -162,6 +212,16 @@ export function MLEFForm({ form: initForm, patient: initPatient, allPatients, us
               <FormField label="Police Station"><Input value={f.officerPoliceStation} onChange={s("officerPoliceStation")} disabled={!isAdminEditA} /></FormField>
             </div>
             {hasPartA && <p className="text-xs text-slate-400 mt-1">Filled by {f.partAFilledBy} on {new Date(f.partAFilledAt).toLocaleString("en-GB")}</p>}
+            <PdfUpload
+              label="Upload Part A (Police Section) PDF Copy"
+              formType="mlef"
+              pdfUrl={f.partAPdfUrl || (f as any).part_a_pdf_url}
+              onUploadComplete={url => {
+                setF(prev => ({ ...prev, partAPdfUrl: url, part_a_pdf_url: url }));
+                toast.success("Part A PDF attached! Click 'Save' to persist to database.");
+              }}
+              onRemove={() => setF(prev => ({ ...prev, partAPdfUrl: "", part_a_pdf_url: "" }))}
+            />
           </FormSection>
         </div>
 
@@ -264,6 +324,16 @@ export function MLEFForm({ form: initForm, patient: initPatient, allPatients, us
               <FormField label="Ref. No."><Input value={f.refNo} onChange={s("refNo")} disabled={!isDoctorEditB} /></FormField>
             </div>
             {hasPartB && <p className="text-xs text-slate-400 mt-1">Filled on {new Date(f.partBFilledAt).toLocaleString("en-GB")}</p>}
+            <PdfUpload
+              label="Upload Part B (Medical Section) PDF Copy"
+              formType="mlef"
+              pdfUrl={f.partBPdfUrl || (f as any).part_b_pdf_url}
+              onUploadComplete={url => {
+                setF(prev => ({ ...prev, partBPdfUrl: url, part_b_pdf_url: url }));
+                toast.success("Part B PDF attached! Click 'Save' to persist to database.");
+              }}
+              onRemove={() => setF(prev => ({ ...prev, partBPdfUrl: "", part_b_pdf_url: "" }))}
+            />
           </FormSection>
         </div>
       </div>

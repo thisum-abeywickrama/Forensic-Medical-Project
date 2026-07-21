@@ -89,6 +89,8 @@ CREATE TABLE mlef_forms (
     slmc_reg_no VARCHAR(255),
     doctor_designation VARCHAR(255),
     ref_no VARCHAR(255),
+    part_a_pdf_url VARCHAR(500),
+    part_b_pdf_url VARCHAR(500),
     part_b_filled_by VARCHAR(50) REFERENCES users(id),
     part_b_filled_at TIMESTAMP,
     
@@ -122,6 +124,7 @@ CREATE TABLE mlr_reports (
     station VARCHAR(255),
     date_of_despatch DATE,
     lab_request_id VARCHAR(50),
+    pdf_url VARCHAR(500),
     status VARCHAR(50) DEFAULT 'draft', -- 'draft', 'submitted'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(50) REFERENCES users(id)
@@ -163,6 +166,7 @@ CREATE TABLE pmr_forms (
     requestor_designation VARCHAR(255),
     jmo_name VARCHAR(255),
     lab_request_id VARCHAR(50),
+    pdf_url VARCHAR(500),
     status VARCHAR(50) DEFAULT 'draft', -- 'draft', 'submitted'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(50) REFERENCES users(id)
