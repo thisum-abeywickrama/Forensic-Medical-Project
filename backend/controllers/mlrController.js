@@ -9,6 +9,19 @@ export const saveMlrReport = async (req, res) => {
             return res.status(400).json({ message: "Report ID and Patient ID are required" });
         }
 
+        if (!Array.isArray(injuries)) {
+            return res.status(400).json({ message: "Injuries must be provided as a list" });
+        }
+
+        const incompleteInjury = injuries.some(injury =>
+            !injury || !injury.no || !injury.description
+        );
+        if (incompleteInjury) {
+            return res.status(400).json({
+                message: "Each injury must include both an injury number and description"
+            });
+        }
+
         const existing = await MlrModel.getMlrById(report.id);
         let resultId;
 

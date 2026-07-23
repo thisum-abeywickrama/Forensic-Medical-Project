@@ -178,19 +178,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const saveMlrReport = async (r: MLRReport) => {
     try {
-      setMlrReports(prev => {
-        const next = prev.some(x => x.id === r.id) ? prev.map(x => x.id === r.id ? r : x) : [...prev, r];
-        syncIdCache("MLR", next);
-        syncGrievousCache(next);
-        return next;
-      });
       const saved = await api.mlr.save(r);
       const normalizedSaved = {
         ...saved,
         pdfUrl: saved.pdfUrl || (saved as any).pdf_url || r.pdfUrl,
       };
       setMlrReports(prev => {
-        const next = prev.map(x => x.id === normalizedSaved.id ? normalizedSaved : x);
+        const next = prev.some(x => x.id === normalizedSaved.id)
+          ? prev.map(x => x.id === normalizedSaved.id ? normalizedSaved : x)
+          : [...prev, normalizedSaved];
         syncIdCache("MLR", next);
         syncGrievousCache(next);
         return next;
@@ -199,7 +195,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return normalizedSaved;
     } catch (err) {
       console.error("Failed to save MLR report:", err);
-      toast.error(`Failed to save MLR Report ${r.id}`);
+      const message = err instanceof Error ? err.message : `Failed to save MLR Report ${r.id}`;
+      toast.error(`Failed to save MLR Report ${r.id}: ${message}`);
       throw err;
     }
   };

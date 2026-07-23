@@ -17,10 +17,11 @@ import type { MLRReport, InjuryEntry, GrievousEntry, Patient, AppUser, LabReques
 interface Props {
   form: MLRReport | null;
   patient: Patient | null;
+  patients: Patient[];
   currentUser: AppUser;
   labRequest: LabRequest | null;
   readOnly?: boolean;
-  onSave: (r: MLRReport) => void;
+  onSave: (r: MLRReport) => Promise<void>;
   onBack: () => void;
   onRequestLab: (patientId: string, formId: string, formType: string) => void;
 }
@@ -88,9 +89,10 @@ function InjuryMultiSelect({ selected, options, onChange, disabled }: {
   );
 }
 
-export function MLRForm({ form: initForm, patient, currentUser, labRequest, readOnly = false, onSave, onBack, onRequestLab }: Props) {
+export function MLRForm({ form: initForm, patient, patients, currentUser, labRequest, readOnly = false, onSave, onBack, onRequestLab }: Props) {
   const isNew = !initForm;
   const now = new Date().toISOString();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [f, setF] = useState<MLRReport>(initForm ?? {
     id: genId("MLR"), patientId: patient?.id ?? "",
@@ -143,6 +145,7 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
 
   // Injury numbers available from Section C
   const injuryNos = f.injuries.map(inj => inj.no).filter(n => n.trim() !== "");
+  const selectedPatient = patient ?? patients.find(p => p.id === f.patientId) ?? null;
 
   const handleDownloadUploadedDocs = () => {
     const pdf = f.pdfUrl || (f as any).pdf_url;
@@ -156,11 +159,36 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
     toast.success("Downloading uploaded document…");
   };
 
+  const handleSave = async () => {
+    if (!f.patientId) {
+      toast.error("Select a patient before saving the MLR report.");
+      return;
+    }
+
+    const incompleteInjury = f.injuries.find(injury =>
+      !injury.no?.trim() || !injury.description?.trim()
+    );
+
+    if (incompleteInjury) {
+      toast.error("Each injury row must include both an injury number and description.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave({ ...f, pdfUrl: f.pdfUrl || (f as any).pdf_url || "", status: "submitted" });
+    } catch {
+      // saveMlrReport already reports the API error. Keep the form open for correction.
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title={isNew ? "New MLR Report" : `MLR — ${f.id}`}
-        subtitle={patient ? `Patient: ${patient.name} · ${patient.id}` : undefined}
+        subtitle={selectedPatient ? `Patient: ${selectedPatient.name} · ${selectedPatient.id}` : undefined}
         onBack={onBack}
         actions={
           <div className="flex gap-2">
@@ -171,7 +199,7 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
               <Btn variant="secondary" size="sm" icon={<Download size={13} />}
                 onClick={async () => {
                   try {
-                    await downloadMlrPdf(f, patient, currentUser.name);
+                    await downloadMlrPdf(f, selectedPatient, currentUser.name);
                     toast.success("Generated report PDF downloaded.");
                   } catch (err) {
                     console.error("Failed to generate MLR PDF:", err);
@@ -189,8 +217,9 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
             )}
             {!readOnly && (
               <Btn variant="primary" icon={<Save size={14} />}
-                onClick={() => { onSave({ ...f, pdfUrl: f.pdfUrl || (f as any).pdf_url || "", status: "submitted" }); onBack(); }}>
-                Save Report
+                disabled={isSaving}
+                onClick={handleSave}>
+                {isSaving ? "Saving..." : "Save Report"}
               </Btn>
             )}
           </div>
@@ -211,14 +240,28 @@ export function MLRForm({ form: initForm, patient, currentUser, labRequest, read
 
       <div className="max-w-4xl space-y-0">
         {/* Patient info */}
-        {patient && (
+        {isNew && !patient && (
+          <FormSection title="Patient Information">
+            <FormField label="Patient">
+              <Select
+                value={f.patientId}
+                onChange={patientId => setF(prev => ({ ...prev, patientId }))}
+                disabled={readOnly}
+                placeholder="Select a patient…"
+                options={patients.map(p => ({ value: p.id, label: `${p.name} (${p.id})` }))}
+              />
+            </FormField>
+          </FormSection>
+        )}
+
+        {selectedPatient && (
           <FormSection title="Patient Information">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-              <div><span className="text-slate-500">Name:</span> <span className="font-medium">{patient.name}</span></div>
-              <div><span className="text-slate-500">ID:</span> <span className="font-medium">{patient.id}</span></div>
-              <div><span className="text-slate-500">NIC:</span> <span className="font-medium">{patient.nic}</span></div>
-              <div><span className="text-slate-500">Age/Sex:</span> <span className="font-medium">{patient.age} yrs / {patient.sex}</span></div>
-              <div className="col-span-1 sm:col-span-2"><span className="text-slate-500">Address:</span> <span className="font-medium">{patient.address}</span></div>
+              <div><span className="text-slate-500">Name:</span> <span className="font-medium">{selectedPatient.name}</span></div>
+              <div><span className="text-slate-500">ID:</span> <span className="font-medium">{selectedPatient.id}</span></div>
+              <div><span className="text-slate-500">NIC:</span> <span className="font-medium">{selectedPatient.nic}</span></div>
+              <div><span className="text-slate-500">Age/Sex:</span> <span className="font-medium">{selectedPatient.age} yrs / {selectedPatient.sex}</span></div>
+              <div className="col-span-1 sm:col-span-2"><span className="text-slate-500">Address:</span> <span className="font-medium">{selectedPatient.address}</span></div>
             </div>
           </FormSection>
         )}

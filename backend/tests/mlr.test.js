@@ -70,7 +70,12 @@ describe("MLR Controller & Routes", () => {
     });
 
     test("5. POST /api/mlr - Save new MLR report successfully", async () => {
-        const inputData = { id: "MLR-2026-1000", patientId: "p-2026-1000", notes: "Court report" };
+        const inputData = {
+            id: "MLR-2026-1000",
+            patientId: "p-2026-1000",
+            notes: "Court report",
+            injuries: [{ no: "1", description: "Bruising on the left forearm" }]
+        };
         getMlrByIdSpy
             .mockResolvedValueOnce(null) // first call: doesn't exist
             .mockResolvedValueOnce(inputData); // second call: return saved report
@@ -83,5 +88,21 @@ describe("MLR Controller & Routes", () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toEqual(inputData);
+    });
+
+    test("6. POST /api/mlr - Reject an incomplete injury before attempting a database write", async () => {
+        const response = await request(app)
+            .post("/api/mlr")
+            .set("Authorization", `Bearer ${doctorToken}`)
+            .send({
+                id: "MLR-2026-1001",
+                patientId: "p-2026-1000",
+                injuries: [{ no: "1", description: "" }]
+            });
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toBe("Each injury must include both an injury number and description");
+        expect(getMlrByIdSpy).not.toHaveBeenCalled();
+        expect(createMlrReportSpy).not.toHaveBeenCalled();
     });
 });
