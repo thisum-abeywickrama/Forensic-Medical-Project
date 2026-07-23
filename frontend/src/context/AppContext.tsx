@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import type { AppUser, Patient, MLEFForm, MLRReport, LabRequest, PMRForm } from "@/types";
+import type { AppUser, Patient, MLEFForm, MLRReport, LabRequest, PMRForm, AutopsyForm } from "@/types";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -20,6 +20,8 @@ interface AppContextType {
   linkLabRequest: (formType: string, formId: string, labRequestId: string) => void;
   pmrForms: PMRForm[];
   savePmrForm: (f: PMRForm) => void;
+  autopsyForms: AutopsyForm[];
+  saveAutopsyForm: (f: AutopsyForm) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -44,6 +46,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [mlrReports, setMlrReports] = useState<MLRReport[]>([]);
   const [labRequests, setLabRequests] = useState<LabRequest[]>([]);
   const [pmrForms, setPmrForms] = useState<PMRForm[]>([]);
+  const [autopsyForms, setAutopsyForms] = useState<AutopsyForm[]>([]);
 
   const handleSetCurrentUser = (u: AppUser | null) => {
     if (u === null) {
@@ -60,6 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setMlrReports([]);
       setLabRequests([]);
       setPmrForms([]);
+      setAutopsyForms([]);
       return;
     }
 
@@ -80,13 +84,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
 
       try {
-        const [usersData, patientsData, mlefData, mlrData, labData, pmrData] = await Promise.all([
+        const [usersData, patientsData, mlefData, mlrData, labData, pmrData, autopsyData] = await Promise.all([
           load("staff", () => api.auth.getUsers()),
           load("patients", () => api.patients.getAll()),
           load("MLEF forms", () => api.mlef.getAll()),
           load("MLR reports", () => api.mlr.getAll()),
           load("lab requests", () => api.lab.getAll()),
           load("PMR reports", () => api.pmr.getAll()),
+          load("Autopsy forms", () => api.autopsy.getAll()),
         ]);
 
         setUsers(usersData || []);
@@ -95,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setMlrReports(mlrData || []);
         setLabRequests(labData || []);
         setPmrForms(pmrData || []);
+        setAutopsyForms(autopsyData || []);
 
         syncIdCache("USR", usersData || []);
         syncIdCache("P", patientsData || []);
@@ -102,6 +108,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         syncIdCache("MLR", mlrData || []);
         syncIdCache("LAB", labData || []);
         syncIdCache("PMR", pmrData || []);
+        syncIdCache("AUTOPSY", autopsyData || []);
         syncGrievousCache(mlrData || []);
 
         if (failures.length) {
@@ -273,6 +280,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           console.error("Failed to link lab request to PMR form:", err);
         }
       }
+    } else if (formType === "autopsy") {
+      const form = autopsyForms.find(f => f.id === formId);
+      if (form) {
+        const updated = { ...form, labRequestId };
+        try {
+          const saved = await api.autopsy.save(updated);
+          setAutopsyForms(prev => {
+            const next = prev.map(f => f.id === formId ? saved : f);
+            syncIdCache("AUTOPSY", next);
+            return next;
+          });
+        } catch (err) {
+          console.error("Failed to link lab request to autopsy form:", err);
+        }
+      }
     }
   };
 
@@ -302,6 +324,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const saveAutopsyForm = async (f: AutopsyForm) => {
+    try {
+      const saved = await api.autopsy.save(f);
+      setAutopsyForms(prev => {
+        const next = prev.some(x => x.id === saved.id)
+          ? prev.map(x => x.id === saved.id ? saved : x)
+          : [...prev, saved];
+        syncIdCache("AUTOPSY", next);
+        return next;
+      });
+      toast.success(`Autopsy Form ${saved.id} saved successfully!`);
+      return saved;
+    } catch (err) {
+      console.error("Failed to save autopsy form:", err);
+      const message = err instanceof Error ? err.message : `Failed to save Autopsy Form ${f.id}`;
+      toast.error(`Failed to save Autopsy Form ${f.id}: ${message}`);
+      throw err;
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       currentUser, setCurrentUser: handleSetCurrentUser,
@@ -311,6 +353,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mlrReports, saveMlrReport,
       labRequests, addLabRequest, updateLabRequest, linkLabRequest,
       pmrForms, savePmrForm,
+      autopsyForms, saveAutopsyForm,
     }}>
       {children}
     </AppContext.Provider>

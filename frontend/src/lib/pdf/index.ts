@@ -1,4 +1,4 @@
-import type { MLEFForm, MLRReport, PMRForm, LabRequest, Patient } from "@/types";
+import type { MLEFForm, MLRReport, PMRForm, AutopsyForm, LabRequest, Patient } from "@/types";
 
 export { isDownloadable } from "./status";
 
@@ -13,6 +13,9 @@ export const downloadMlrPdf = async (report: MLRReport, patient: Patient | null,
 
 export const downloadPmrPdf = async (form: PMRForm, patient: Patient | null, generatedBy: string) =>
   (await import("./pmr")).downloadPmrPdf(form, patient, generatedBy);
+
+export const downloadAutopsyPdf = async (form: AutopsyForm, patient: Patient | null, generatedBy: string) =>
+  (await import("./autopsy")).downloadAutopsyPdf(form, patient, generatedBy);
 
 export const downloadLabPdf = async (req: LabRequest, patient: Patient | null, generatedBy: string) =>
   (await import("./lab")).downloadLabPdf(req, patient, generatedBy);

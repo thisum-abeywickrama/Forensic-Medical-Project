@@ -11,16 +11,16 @@
  * Kept in its own module, free of any jsPDF import, so that list pages can check
  * downloadability without pulling the PDF engine into the main bundle.
  */
-export function isDownloadable(kind: "mlef" | "mlr" | "pmr" | "lab", status: string): boolean {
+export function isDownloadable(kind: "mlef" | "mlr" | "pmr" | "autopsy" | "lab", status: string): boolean {
   if (kind === "mlef") return true;
   return !isDraft(kind, status);
 }
 
 /** Whether an exported record should carry the DRAFT marking. */
-export function isDraft(kind: "mlef" | "mlr" | "pmr" | "lab", status: string): boolean {
+export function isDraft(kind: "mlef" | "mlr" | "pmr" | "autopsy" | "lab", status: string): boolean {
   return !(
     (kind === "mlef" && (status === "complete" || status === "completed")) ||
-    ((kind === "mlr" || kind === "pmr") && (status === "submitted" || status === "complete" || status === "completed")) ||
+    ((kind === "mlr" || kind === "pmr" || kind === "autopsy") && (status === "submitted" || status === "complete" || status === "completed")) ||
     (kind === "lab" && status === "completed")
   );
 }

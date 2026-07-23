@@ -2,11 +2,12 @@ import { describe, test, expect } from "vitest";
 import { buildMlefDoc } from "../mlef";
 import { buildMlrDoc } from "../mlr";
 import { buildPmrDoc } from "../pmr";
+import { buildAutopsyDoc } from "../autopsy";
 import { buildLabDoc } from "../lab";
 import { fileName } from "../shared";
 import { isDownloadable, isDraft } from "../status";
 import { fmt, fmtDate, fmtDateTime, fmtCoded } from "../reportDoc";
-import type { MLEFForm, MLRReport, PMRForm, LabRequest, Patient } from "@/types";
+import type { MLEFForm, MLRReport, PMRForm, AutopsyForm, LabRequest, Patient } from "@/types";
 
 const PATIENT: Patient = {
   id: "P2026-001", name: "Ruwan Kumara", dob: "1985-03-15", age: 41, sex: "Male",
@@ -59,6 +60,19 @@ const PMR = {
   jmoName: "Dr. Ruwan Perera", labRequestId: "", status: "submitted",
   createdAt: "2026-06-23T08:00:00", createdBy: "j1",
 } as PMRForm;
+
+const AUTOPSY = {
+  id: "AUTOPSY-2026-001", patientId: "P2026-001", pmRegisterSerialNo: "PM/2026/44", date: "2026-06-23", verdict: "Natural",
+  locusExamination: "Mortuary table", externalExamination: "Well-nourished adult male", injuries: "No external injuries", injuriesOnContinuationSheet: false,
+  height: "172 cm", estimatedAge: "41", sex: "Male", eyesAndPupils: "Normal", hair: "Black", tongue: "Normal", teeth: "Natural dentition",
+  bodyTemperature: "Cool", primaryFlaccidity: "Absent", rigorMortis: "Present", hypostasis: "Posterior", putrefaction: "Absent",
+  noseMouthEars: "Nil", urinaryAndSexual: "Nil", anal: "Nil", handsAndNails: "Clean", neck: "No injury",
+  headSoftParts: "Normal", skullBones: "Intact", brainMembranesSinuses: "Normal", brainSubstanceVentricles: "Normal", brainBloodVessels: "Normal", spinalCord: "Normal",
+  thoraxBones: "Intact", chestCavity: "Normal", pericardium: "Normal", heart: "Normal", coronaryVessels: "Patent", largeBloodVessels: "Normal", larynxTracheaBronchi: "Clear", pleuraAndLungs: "Normal", gullet: "Normal",
+  abdomenContents: "Normal", peritoneum: "Normal", diaphragm: "Normal", liverAndGallBladder: "Normal", spleen: "Normal", stomach: "Empty", smallIntestines: "Normal", largeIntestines: "Normal", pancreas: "Normal", kidneys: "Normal", suprarenalGlands: "Normal",
+  bladderAndProstate: "Normal", generativeOrgans: "Normal", pelvicBloodVessels: "Normal", pelvicBones: "Intact", causeOfDeath: "Natural causes", articlesSecured: [{ id: "1", description: "Blood sample", purpose: "Toxicology" }],
+  moName: "Dr. Ruwan Perera", moQualifications: "MBBS, DLM", moDesignation: "JMO", labRequestId: "", status: "submitted", createdAt: "2026-06-23T08:00:00", createdBy: "j1",
+} as AutopsyForm;
 
 const LAB = {
   id: "LAB-2026-001", patientId: "P2026-001", requestedBy: "d2",
@@ -125,6 +139,7 @@ describe("Export eligibility", () => {
     expect(isDownloadable("mlef", "complete")).toBe(true);
     expect(isDownloadable("mlr", "submitted")).toBe(true);
     expect(isDownloadable("pmr", "submitted")).toBe(true);
+    expect(isDownloadable("autopsy", "submitted")).toBe(true);
     expect(isDownloadable("lab", "completed")).toBe(true);
   });
 
@@ -133,9 +148,10 @@ describe("Export eligibility", () => {
     expect(isDownloadable("mlef", "")).toBe(true);
   });
 
-  test("10. Still blocks unfinished MLR, PMR and lab records", () => {
+  test("10. Still blocks unfinished MLR, PMR, autopsy and lab records", () => {
     expect(isDownloadable("mlr", "draft")).toBe(false);
     expect(isDownloadable("pmr", "draft")).toBe(false);
+    expect(isDownloadable("autopsy", "draft")).toBe(false);
     expect(isDownloadable("lab", "pending")).toBe(false);
     expect(isDownloadable("lab", "in_progress")).toBe(false);
   });
@@ -145,6 +161,8 @@ describe("Export eligibility", () => {
     expect(isDraft("mlef", "complete")).toBe(false);
     expect(isDraft("mlr", "draft")).toBe(true);
     expect(isDraft("mlr", "submitted")).toBe(false);
+    expect(isDraft("autopsy", "draft")).toBe(true);
+    expect(isDraft("autopsy", "submitted")).toBe(false);
     expect(isDraft("lab", "pending")).toBe(true);
     expect(isDraft("lab", "completed")).toBe(false);
   });
@@ -155,6 +173,7 @@ describe("Report generation", () => {
     ["MLEF", () => buildMlefDoc(MLEF, PATIENT, "Dr. Tester")],
     ["MLR", () => buildMlrDoc(MLR, PATIENT, "Dr. Tester")],
     ["PMR", () => buildPmrDoc(PMR, PATIENT, "Dr. Tester")],
+    ["Autopsy", () => buildAutopsyDoc(AUTOPSY, PATIENT, "Dr. Tester")],
     ["Lab", () => buildLabDoc(LAB, PATIENT, "Dr. Tester")],
   ] as const;
 

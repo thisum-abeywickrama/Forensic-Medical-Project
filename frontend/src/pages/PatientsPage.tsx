@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 
 export function PatientsPage() {
-  const { currentUser, patients, mlefForms, mlrReports, pmrForms, labRequests } = useApp();
+  const { currentUser, patients, mlefForms, mlrReports, pmrForms, autopsyForms, labRequests } = useApp();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
@@ -41,6 +41,7 @@ export function PatientsPage() {
           const pMlef     = mlefForms.filter(f => f.patientId === p.id);
           const pMlr      = mlrReports.filter(r => r.patientId === p.id);
           const pPmr      = pmrForms.filter(f => f.patientId === p.id);
+          const pAutopsy  = autopsyForms.filter(f => f.patientId === p.id);
           const pLab      = labRequests.filter(r => r.patientId === p.id);
 
           return (
@@ -152,6 +153,24 @@ export function PatientsPage() {
                       </Btn>
                     )}
                     {pPmr.length === 0 && <span className="text-xs text-slate-400 italic">None</span>}
+                  </div>
+
+                  {/* Autopsy â€” JMO creates; others view */}
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-xs font-semibold text-slate-400 w-16 flex-shrink-0">Autopsy</span>
+                    {pAutopsy.map(f => (
+                      <Btn key={f.id} variant="secondary" size="sm" icon={<Eye size={12} />}
+                        onClick={() => navigate(`/autopsy/${f.id}`)}>
+                        {f.id} <Badge status={f.status} />
+                      </Btn>
+                    ))}
+                    {isJmo && (
+                      <Btn variant="ghost" size="sm" icon={<Plus size={12} />}
+                        onClick={() => navigate(`/autopsy/new?patientId=${p.id}`)}>
+                        New Autopsy
+                      </Btn>
+                    )}
+                    {pAutopsy.length === 0 && <span className="text-xs text-slate-400 italic">None</span>}
                   </div>
                 </div>
               </div>
