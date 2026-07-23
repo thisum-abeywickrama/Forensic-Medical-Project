@@ -37,6 +37,7 @@ export function MLRFormPage() {
       <MLRForm
         form={form}
         patient={patient}
+        patients={patients}
         currentUser={currentUser}
         labRequest={labRequest}
         readOnly={readOnly}

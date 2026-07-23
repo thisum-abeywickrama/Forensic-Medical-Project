@@ -180,3 +180,77 @@ export interface PMRForm {
   createdBy: string;
 }
 
+export interface ArticleSecured {
+  id: string;
+  description: string;
+  purpose: string;
+}
+
+export interface AutopsyForm {
+  id: string;
+  patientId: string;
+  pmRegisterSerialNo: string;
+  date: string;
+  verdict: string;
+  locusExamination: string;
+  externalExamination: string;
+  injuries: string;
+  injuriesOnContinuationSheet: boolean;
+  height: string;
+  estimatedAge: string;
+  sex: string;
+  eyesAndPupils: string;
+  hair: string;
+  tongue: string;
+  teeth: string;
+  bodyTemperature: string;
+  primaryFlaccidity: string;
+  rigorMortis: string;
+  hypostasis: string;
+  putrefaction: string;
+  noseMouthEars: string;
+  urinaryAndSexual: string;
+  anal: string;
+  handsAndNails: string;
+  neck: string;
+  headSoftParts: string;
+  skullBones: string;
+  brainMembranesSinuses: string;
+  brainSubstanceVentricles: string;
+  brainBloodVessels: string;
+  spinalCord: string;
+  thoraxBones: string;
+  chestCavity: string;
+  pericardium: string;
+  heart: string;
+  coronaryVessels: string;
+  largeBloodVessels: string;
+  larynxTracheaBronchi: string;
+  pleuraAndLungs: string;
+  gullet: string;
+  abdomenContents: string;
+  peritoneum: string;
+  diaphragm: string;
+  liverAndGallBladder: string;
+  spleen: string;
+  stomach: string;
+  smallIntestines: string;
+  largeIntestines: string;
+  pancreas: string;
+  kidneys: string;
+  suprarenalGlands: string;
+  bladderAndProstate: string;
+  generativeOrgans: string;
+  pelvicBloodVessels: string;
+  pelvicBones: string;
+  causeOfDeath: string;
+  articlesSecured: ArticleSecured[];
+  moName: string;
+  moQualifications: string;
+  moDesignation: string;
+  labRequestId: string;
+  status: FormStatus;
+  createdAt: string;
+  createdBy: string;
+}
+

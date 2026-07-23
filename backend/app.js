@@ -8,6 +8,7 @@ import patientRoutes from "./routes/patientRoutes.js";
 import mlefRoutes from "./routes/mlefRoutes.js";
 import mlrRoutes from "./routes/mlrRoutes.js";
 import pmrRoutes from "./routes/pmrRoutes.js";
+import autopsyRoutes from "./routes/autopsyRoutes.js";
 import labRoutes from "./routes/labRoutes.js";
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use("/api/patients", patientRoutes);
 app.use("/api/mlef", mlefRoutes);
 app.use("/api/mlr", mlrRoutes);
 app.use("/api/pmr", pmrRoutes);
+app.use("/api/autopsy", autopsyRoutes);
 app.use("/api/lab", labRoutes);
 
 // Catch-all error handler. Any error thrown in a route that is not handled by

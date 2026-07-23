@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router";
 import {
   Activity, Users, ClipboardList, FileText, Clipboard,
-  FlaskConical, LogOut, Plus, Calendar, BarChart2, User, X,
+  FlaskConical, LogOut, Plus, Calendar, BarChart2, User, X, FileSearch,
 } from "lucide-react";
 import { cls } from "@/lib/utils";
 import type { AppUser, Role } from "@/types";
@@ -15,6 +15,7 @@ const DOCTOR_NAV: NavItem[] = [
   { to: "/mlef",                label: "MLEF Forms",       icon: <ClipboardList size={16} /> },
   { to: "/mlr",              label: "MLR Reports",      icon: <FileText size={16} /> },
   { to: "/pmr",              label: "PMR Reports",      icon: <Clipboard size={16} /> },
+  { to: "/autopsy",          label: "Autopsy Forms",    icon: <FileSearch size={16} /> },
   { to: "/lab-requests",     label: "Lab Requests",     icon: <FlaskConical size={16} /> },
   { to: "/reports/daily",    label: "Daily Case Report",icon: <Calendar size={16} /> },
   { to: "/reports/monthly",  label: "Monthly Statistics", icon: <BarChart2 size={16} /> },
@@ -28,6 +29,7 @@ const ADMIN_NAV: NavItem[] = [
   { to: "/mlef",             label: "MLEF Forms",         icon: <ClipboardList size={16} /> },
   { to: "/mlr",              label: "MLR Reports",        icon: <FileText size={16} /> },
   { to: "/pmr",              label: "PMR Reports",        icon: <Clipboard size={16} /> },
+  { to: "/autopsy",          label: "Autopsy Forms",      icon: <FileSearch size={16} /> },
   { to: "/lab-requests",     label: "Lab Reports",        icon: <FlaskConical size={16} /> },
   { to: "/reports/daily",    label: "Daily Case Report",  icon: <Calendar size={16} /> },
   { to: "/reports/monthly",  label: "Monthly Statistics", icon: <BarChart2 size={16} /> },
@@ -44,6 +46,7 @@ const JMO_NAV: NavItem[] = [
   { to: "/mlef",                label: "MLEF Forms",       icon: <ClipboardList size={16} /> },
   { to: "/mlr",                 label: "MLR Reports",      icon: <FileText size={16} /> },
   { to: "/pmr",                 label: "PMR Reports",      icon: <Clipboard size={16} /> },
+  { to: "/autopsy",             label: "Autopsy Forms",    icon: <FileSearch size={16} /> },
   { to: "/lab-requests",        label: "Lab Requests",     icon: <FlaskConical size={16} /> },
   { to: "/reports/daily",       label: "Daily Case Report",icon: <Calendar size={16} /> },
   { to: "/reports/monthly",     label: "Monthly Statistics", icon: <BarChart2 size={16} /> },

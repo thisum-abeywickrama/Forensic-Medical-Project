@@ -209,6 +209,20 @@ export const api = {
       });
     }
   },
+  autopsy: {
+    getAll: async () => {
+      return request('/autopsy');
+    },
+    getById: async (id: string) => {
+      return request(`/autopsy/${id}`);
+    },
+    save: async (formData: any) => {
+      return request('/autopsy', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+    }
+  },
   lab: {
     getAll: async () => {
       return request('/lab');
